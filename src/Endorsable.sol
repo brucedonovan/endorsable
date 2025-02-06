@@ -20,10 +20,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 pragma solidity ^0.8.13;
 
-// Import Ownable from the OpenZeppelin Contracts library
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 contract Endorsable is Ownable {
+
+    constructor() Ownable(msg.sender) {}
 
     mapping (address=>endorseState) private endorsements;
     enum endorseState {UNASSIGNED, REQUESTED, ENDORSED, REVOKED, REMOVED, BLACKLISTED}
