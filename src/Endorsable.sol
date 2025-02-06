@@ -20,9 +20,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 pragma solidity ^0.8.13;
 
-contract Endorsable is Ownable {
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-    constructor() Ownable(msg.sender) {}
+contract Endorsable is Ownable {
 
     mapping (address=>endorseState) private endorsements;
     enum endorseState {UNASSIGNED, REQUESTED, ENDORSED, REVOKED, REMOVED, BLACKLISTED}
@@ -35,7 +35,7 @@ contract Endorsable is Ownable {
     /// @dev Empty internal constructor, to prevent people from mistakenly deploying
     /// an instance of this contract, which should be used via inheritance.
     // solium-disable-next-line
-    constructor () internal { }
+    constructor() Ownable(msg.sender) {}
 
     /// @notice tx sender endorses the contract, only if requested to do so.
     /// @dev endorses a contract
