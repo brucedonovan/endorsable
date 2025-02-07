@@ -1,8 +1,8 @@
-# Endorsable Smart Contract
+# Endorsable 
 
 ## Overview
 
-The `Endorsable` smart contract is designed to be inherited by other contracts, providing a structured mechanism for managing endorsements. It ensures that endorsements are explicitly requested, granted, revoked, or removed, making it ideal for use cases where verification, trust, and reputation tracking are essential.
+The `Endorsable` solidty contract is designed to be inherited by other contracts, providing a structured mechanism for managing endorsements. It ensures that endorsements are explicitly requested, granted, revoked, or removed, making it ideal for use cases where verification, trust, and reputation tracking are essential.
 
 ### **Key Benefits**
 
