@@ -44,7 +44,7 @@ contract Endorsable is Ownable {
     /// @dev empty internal constructor, to prevent people from mistakenly deploying
     /// an instance of this contract, which should be used via inheritance. It also sets the ownership.
     // solium-disable-next-line
-    constructor() Ownable(msg.sender) {}
+    constructor() Ownable() {}
 
     /// @notice tx sender endorses the contract, ONLY if requested to do so.
     /// @dev endorses a contract
