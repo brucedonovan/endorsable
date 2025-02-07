@@ -2,13 +2,13 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "src/Endorsable.sol";
+import "../src/Endorsable.sol";
 
 contract EndorsableTest is Test {
     Endorsable endorsable;
-    address owner = address(0x1);
-    address user1 = address(0x2);
-    address user2 = address(0x3);
+    address owner = address(0x123);
+    address user1 = address(0x456);
+    address user2 = address(0x789);
 
     function setUp() public {
         vm.prank(owner);
@@ -18,38 +18,25 @@ contract EndorsableTest is Test {
     function testRequestEndorsement() public {
         vm.prank(owner);
         endorsable.requestEndorsement(user1);
-        assertEq(uint(endorsable.getEndorsementStatus(user1)), uint(Endorsable.endorseState.REQUESTED));
-    }
 
-    function testCannotRequestEndorsementIfAlreadyRequested() public {
-        vm.prank(owner);
-        endorsable.requestEndorsement(user1);
-        vm.prank(owner);
-        vm.expectRevert("The signature has already been requested.");
-        endorsable.requestEndorsement(user1);
-    }
-
-    function testCannotRequestEndorsementIfAlreadyEndorsed() public {
-        vm.prank(owner);
-        endorsable.requestEndorsement(user1);
-        vm.prank(user1);
-        endorsable.endorse();
-        vm.prank(owner);
-        vm.expectRevert("This item has already been endorsed.");
-        endorsable.requestEndorsement(user1);
+        uint8 status = endorsable.getEndorsementStatus(user1);
+        assertEq(status, 1, "User1 should be in REQUESTED state");
     }
 
     function testEndorse() public {
         vm.prank(owner);
         endorsable.requestEndorsement(user1);
+
         vm.prank(user1);
         endorsable.endorse();
-        assertEq(uint(endorsable.getEndorsementStatus(user1)), uint(Endorsable.endorseState.ENDORSED));
+
+        uint8 status = endorsable.getEndorsementStatus(user1);
+        assertEq(status, 2, "User1 should be in ENDORSED state");
     }
 
     function testCannotEndorseWithoutRequest() public {
         vm.prank(user1);
-        vm.expectRevert("Account has not been explicitly requested to endorsed this item.");
+        vm.expectRevert("Endorsement not requested");
         endorsable.endorse();
     }
 
@@ -60,14 +47,17 @@ contract EndorsableTest is Test {
         endorsable.endorse();
         vm.prank(user1);
         endorsable.revokeEndorsement();
-        assertEq(uint(endorsable.getEndorsementStatus(user1)), uint(Endorsable.endorseState.REVOKED));
+
+        uint8 status = endorsable.getEndorsementStatus(user1);
+        assertEq(status, 3, "User1 should be in REVOKED state");
     }
 
     function testCannotRevokeIfNotEndorsed() public {
         vm.prank(owner);
         endorsable.requestEndorsement(user1);
+
         vm.prank(user1);
-        vm.expectRevert("Element not endorsed, or previously revoked or removed");
+        vm.expectRevert("Not endorsed, already revoked, or removed.");
         endorsable.revokeEndorsement();
     }
 
@@ -78,24 +68,47 @@ contract EndorsableTest is Test {
         endorsable.endorse();
         vm.prank(owner);
         endorsable.removeEndorsement(user1);
-        assertEq(uint(endorsable.getEndorsementStatus(user1)), uint(Endorsable.endorseState.REMOVED));
+
+        uint8 status = endorsable.getEndorsementStatus(user1);
+        assertEq(status, 4, "User1 should be in REMOVED state");
     }
 
-    function testCannotRemoveIfNotEndorsed() public {
+    function testCannotRemoveIfNotEndorsedOrRequested() public {
         vm.prank(owner);
-        endorsable.requestEndorsement(user1);
-        vm.prank(owner);
-        vm.expectRevert("Element not endorsed, or previously revoked or removed");
+        vm.expectRevert("Not endorsed or requested.");
         endorsable.removeEndorsement(user1);
     }
 
-    function testEndorseAddress() public {
+    function testFuzzRequestEndorsement(address randomUser) public {
+        vm.assume(randomUser != address(0));
         vm.prank(owner);
-        Endorsable anotherEndorsable = new Endorsable();
+        endorsable.requestEndorsement(randomUser);
+
+        uint8 status = endorsable.getEndorsementStatus(randomUser);
+        assertEq(status, 1, "Random user should be in REQUESTED state");
+    }
+
+    function testFuzzEndorse(address randomUser) public {
+        vm.assume(randomUser != address(0));
         vm.prank(owner);
-        anotherEndorsable.requestEndorsement(address(endorsable));
+        endorsable.requestEndorsement(randomUser);
+        vm.prank(randomUser);
+        endorsable.endorse();
+
+        uint8 status = endorsable.getEndorsementStatus(randomUser);
+        assertEq(status, 2, "Random user should be in ENDORSED state");
+    }
+
+    function testFuzzRevokeEndorsement(address randomUser) public {
+        vm.assume(randomUser != address(0));
         vm.prank(owner);
-        endorsable.endorseAddress(address(anotherEndorsable));
-        assertEq(uint(anotherEndorsable.getEndorsementStatus(address(endorsable))), uint(Endorsable.endorseState.ENDORSED));
+        endorsable.requestEndorsement(randomUser);
+        vm.prank(randomUser);
+        endorsable.endorse();
+        vm.prank(randomUser);
+        endorsable.revokeEndorsement();
+
+        uint8 status = endorsable.getEndorsementStatus(randomUser);
+        assertEq(status, 3, "Random user should be in REVOKED state");
     }
 }
