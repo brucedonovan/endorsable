@@ -8,7 +8,7 @@ The `Endorsable` smart contract is designed to be inherited by other contracts, 
 
 - **Standardized Endorsement Workflow**: Contracts can be endorsed by any other contracts or EOAs.
 - **Trust & Reputation Management**: Useful in permissioned environments like DAOs, audits, and credentialing.
-- **Security & Transparency**: Built with OpenZeppelin’s `Ownable` contract for simple access control.
+- **Security & Transparency**: Built with OpenZeppelin’s `Ownable` contract for uncomplicated access control.
 
 ### **Potential Use Cases**
 
@@ -35,20 +35,25 @@ The `Endorsable` smart contract is designed to be inherited by other contracts, 
 - **Endorsement Granting**: A requested contract/account can grant endorsement.
 - **Revoking Endorsement**: Contracts can revoke their endorsement.
 - **Removing Endorsements**: The owner can remove an endorsement.
-- **Endorse Another Contract**: The owner can trigger an endorsement on another `Endorsable` contract.
+- (**Endorse Another Contract**: The owner can trigger an endorsement on another `Endorsable` contract.) -- under consideration
 - **Permission Control**: Uses OpenZeppelin’s `Ownable` for access control.
 
 ## Usage
 
-To use `Endorsable`, inherit it in your contract:
+To use `Endorsable`, download the package:
 
 ```sh
     yarn add @brucedonovan/endorsable
 ```
-or 
+or
+
 ```sh
     npm install @brucedonovan/endorsable
 ```
+
+(TODO add foundry install feature)
+
+and then inherit it in your contract:
 
 ```solidity
 pragma solidity ^0.8.13;
