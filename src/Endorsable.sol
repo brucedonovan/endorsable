@@ -20,7 +20,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "openzeppelin/contracts/access/Ownable.sol";
 
 contract Endorsable is Ownable {
     mapping(address => uint8) private endorsements;
