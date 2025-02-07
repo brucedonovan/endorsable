@@ -29,8 +29,8 @@ contract Endorsable is Ownable {
         REQUESTED, // 1
         ENDORSED, // 2
         REVOKED, // 3
-        REMOVED, // 4
-        BLACKLISTED // 5
+        REMOVED // 4
+        // BLACKLISTED // 5
     }
 
     event Endorsed(address indexed endorser);
@@ -77,20 +77,16 @@ contract Endorsable is Ownable {
             endorsements[addr] != uint8(endorseState.REQUESTED),
             "Already requested."
         );
-        require(
-            endorsements[addr] != uint8(endorseState.BLACKLISTED),
-            "Cannot request from blacklisted address."
-        );
+        // require(
+        //     endorsements[addr] != uint8(endorseState.BLACKLISTED),
+        //     "Cannot request from blacklisted address."
+        // );
         endorsements[addr] = uint8(endorseState.REQUESTED);
         emit EndorsementRequested(addr);
     }
 
     /// @dev removes any address that has previously signed the item
     function removeEndorsement(address addr) external onlyOwner {
-        // require(
-        //     endorsements[addr] == uint8(endorseState.ENDORSED),
-        //     "Not endorsed, already revoked or removed"
-        // );
         require(
             endorsements[addr] == uint8(endorseState.ENDORSED) ||
             endorsements[addr] == uint8(endorseState.REQUESTED),
@@ -100,11 +96,11 @@ contract Endorsable is Ownable {
         emit EndorsementRemoved(addr);
     }
 
-    /// @dev Blacklists an address, preventing future endorsements
-    function blacklistAddress(address addr) external onlyOwner {
-        endorsements[addr] = uint8(endorseState.BLACKLISTED);
-        emit Blacklisted(addr);
-    }
+    // /// @dev Blacklists an address, preventing future endorsements ( - IS THIS EVEN NEEDED? )
+    // function blacklistAddress(address addr) external onlyOwner {
+    //     endorsements[addr] = uint8(endorseState.BLACKLISTED);
+    //     emit Blacklisted(addr);
+    // }
 
     /// Returns if the signature is requested.
     /// @dev retrieves the state of the endorsement
