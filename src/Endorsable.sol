@@ -47,10 +47,10 @@ contract Endorsable is Ownable {
     /// @dev endorses a contract
     function endorse() external {
         require(
-            endorsements[msg.sender] == endorseState.REQUESTED,
+            endorsements[msg.sender] == uint8(endorseState.REQUESTED),
             "Account has not been explicitly requested to endorsed this item."
         );
-        endorsements[msg.sender] = endorseState.ENDORSED;
+        endorsements[msg.sender] = uint8(endorseState.ENDORSED);
         emit Endorsed(msg.sender);
     }
 
@@ -58,10 +58,10 @@ contract Endorsable is Ownable {
     /// @dev if not endorsed yet, it remains in the list as requested
     function revokeEndorsement() external {
         require(
-            endorsements[msg.sender] == endorseState.ENDORSED,
+            endorsements[msg.sender] == uint8(endorseState.ENDORSED),
             "Element not endorsed, or previously revoked or removed"
         );
-        endorsements[msg.sender] = endorseState.REVOKED;
+        endorsements[msg.sender] = uint8(endorseState.REVOKED);
         emit EndorsementRevoked(msg.sender);
     }
 
@@ -69,24 +69,24 @@ contract Endorsable is Ownable {
     /// Note: this will revert 'Removed' and 'Revoked' statuses back to 'Requested'.
     function requestEndorsement(address addr) external onlyOwner {
         require(
-            endorsements[addr] != endorseState.ENDORSED,
+            endorsements[addr] != uint8(endorseState.ENDORSED),
             "This item has already been endorsed."
         );
         require(
-            endorsements[addr] != endorseState.REQUESTED,
+            endorsements[addr] != uint8(endorseState.REQUESTED),
             "The signature has already been requested."
         );
-        endorsements[addr] = endorseState.REQUESTED;
+        endorsements[addr] = uint8(endorseState.REQUESTED);
         emit EndorsementRequested(addr);
     }
 
     /// @dev removes any address that has previously signed the item
     function removeEndorsement(address addr) external onlyOwner {
         require(
-            endorsements[addr] == endorseState.ENDORSED,
+            endorsements[addr] == uint8(endorseState.ENDORSED),
             "Element not endorsed, or previously revoked or removed"
         );
-        endorsements[addr] = endorseState.REMOVED;
+        endorsements[addr] = uint8(endorseState.REMOVED);
         emit EndorsementRemoved(addr);
     }
 
@@ -95,7 +95,7 @@ contract Endorsable is Ownable {
     /// @return endorseState representing the endorsement state of the contract
     function getEndorsementStatus(
         address addr
-    ) public view returns (endorseState) {
+    ) public view returns (uint8) {
         return endorsements[addr];
     }
 
