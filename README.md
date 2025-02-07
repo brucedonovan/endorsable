@@ -155,11 +155,6 @@ contract Endorsable is Ownable {
         return endorsements[addr];
     }
 
-    function endorseAddress(address addr) external onlyOwner {
-        require(addr.code.length > 0, "Only contracts can be endorsed.");
-        Endorsable otherContract = Endorsable(addr);
-        otherContract.endorse();
-    }
 }
 ```
 
@@ -186,6 +181,3 @@ Feel free to fork, submit issues, or open a pull request if you’d like to cont
 For inquiries, please open an issue on GitHub or contact the author directly.
 
 ---
-
-*This README was auto-generated for the Endorsable contract suite.*
-

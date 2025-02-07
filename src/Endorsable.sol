@@ -99,8 +99,4 @@ contract Endorsable is Ownable {
         return endorsements[addr];
     }
 
-    function endorseAddress(address addr) external onlyOwner {
-        Endorsable otherContract = Endorsable(addr);
-        otherContract.endorse();
-    }
 }
