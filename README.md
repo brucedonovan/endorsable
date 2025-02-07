@@ -163,7 +163,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Authors
 
-- **5Swim Ltd / Bruce Donovan**
+- **Bruce Donovan / 5Swim**
 
 ## Contributing
 
