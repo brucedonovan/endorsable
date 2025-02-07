@@ -1,78 +1,73 @@
-# Endorsable Smart Contract Suite
+# Endorsable Smart Contract
 
 ## Overview
-The `Endorsable` smart contract suite provides a structured way to request, grant, revoke, and remove endorsements from addresses. It enforces explicit endorsement requests and owner-controlled endorsement management, ensuring secure and controlled endorsement flows.
+
+The `Endorsable` smart contract is designed to be inherited by other contracts, providing a structured mechanism for managing endorsements. It ensures that endorsements are explicitly requested, granted, revoked, or removed, making it ideal for use cases where verification, trust, and reputation tracking are essential.
+
+### **Key Benefits**
+
+- **Standardized Endorsement Workflow**: Contracts can be endorsed by any other contracts or EOAs.
+- **Trust & Reputation Management**: Useful in permissioned environments like DAOs, audits, and credentialing.
+- **Security & Transparency**: Built with OpenZeppelin’s `Ownable` contract for simple access control.
+
+### **Potential Use Cases**
+
+1. **Smart Contract Security Audits & Certifications**
+
+   - Security audit firms can use `Endorsable` to issue endorsements to verified smart contracts.
+   - Endorsements can be revoked if vulnerabilities are later discovered.
+   - Example: A DeFi protocol integrates `Endorsable` to show which contracts have been reviewed and endorsed by auditors.
+
+2. **DAO Governance & Reputation Systems**
+
+   - DAOs can require endorsements from reputable smart contracts before executing governance actions.
+   - Example: A DAO may only allow governance contracts that have been endorsed by its core members.
+
+3. **Whitelisted Contract Management**
+
+   - Used for managing a list of approved smart contracts that meet certain criteria.
+   - Enables controlled interactions between verified contracts.
+   - Example: A blockchain-based insurance system may only allow claims to be processed by endorsed contracts.
 
 ## Features
-- **Endorsement Requests**: The contract owner can request an endorsement from any address.
-- **Endorsement Granting**: A requested address can grant endorsement.
-- **Revoking Endorsement**: Users can revoke their endorsement.
+
+- **Endorsement Requests**: The contract owner can request an endorsement for another smart contract.
+- **Endorsement Granting**: A requested contract/account can grant endorsement.
+- **Revoking Endorsement**: Contracts can revoke their endorsement.
 - **Removing Endorsements**: The owner can remove an endorsement.
 - **Endorse Another Contract**: The owner can trigger an endorsement on another `Endorsable` contract.
 - **Permission Control**: Uses OpenZeppelin’s `Ownable` for access control.
 
-## Installation
-### Prerequisites
-- **Foundry**: Install Foundry for Solidity testing.
-  ```sh
-  curl -L https://foundry.paradigm.xyz | bash
-  foundryup
-  ```
-- **Node.js & NPM** (if using Hardhat for testing)
-  ```sh
-  npm install -g hardhat
-  ```
+## Usage
 
-### Clone the Repository
+To use `Endorsable`, inherit it in your contract:
+
 ```sh
-git clone https://github.com/YOUR_GITHUB/Endorsable.git
-cd Endorsable
+    yarn add @brucedonovan/endorsable
+```
+or 
+```sh
+    npm install @brucedonovan/endorsable
 ```
 
-### Install Dependencies
-```sh
-forge install
+```solidity
+pragma solidity ^0.8.13;
+
+import "./Endorsable.sol";
+
+contract MyContract is Endorsable {
+    constructor() Endorsable() {}
+
+    function myFunction() external {
+        // Custom logic here
+    }
+}
 ```
-
-## Running Tests
-To test the contract, run:
-```sh
-forge test
-```
-
-## Deployment
-### Deploy Using Foundry
-```sh
-forge create --private-key YOUR_PRIVATE_KEY src/Endorsable.sol:Endorsable
-```
-
-### Deploy Using Hardhat
-1. Create a deployment script inside `scripts/deploy.js`.
-2. Deploy the contract:
-   ```sh
-   npx hardhat run scripts/deploy.js --network goerli
-   ```
-
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Authors
-- **5Swim Ltd / Bruce Donovan**
-
-## Contributing
-Feel free to fork, submit issues, or open a pull request if you’d like to contribute!
-
-## Security Considerations
-- Ensure the contract is only deployed on trusted networks.
-- Be cautious of reentrancy attacks and always follow best Solidity security practices.
-
-## Contact
-For inquiries, please open an issue on GitHub or contact the author directly.
-
----
 
 ## Smart Contract
+
 ### **Endorsable.sol**
+
 ```solidity
 pragma solidity ^0.8.13;
 
@@ -90,7 +85,8 @@ contract Endorsable is Ownable {
     constructor() Ownable(msg.sender) {}
 
     function endorse() external {
-        require(endorsements[msg.sender] == endorseState.REQUESTED, "Account has not been explicitly requested to endorse this item.");
+        require(endorsements[msg.sender] == endorseState.REQUESTED, "Contract has not been explicitly requested to endorse this item.");
+        require(msg.sender.code.length > 0, "Only contracts can be endorsed.");
         endorsements[msg.sender] = endorseState.ENDORSED;
         emit Endorsed(msg.sender);
     }
@@ -102,7 +98,8 @@ contract Endorsable is Ownable {
     }
 
     function requestEndorsement(address addr) external onlyOwner {
-        require(endorsements[addr] != endorseState.ENDORSED, "This item has already been endorsed.");
+        require(addr.code.length > 0, "Only contracts can be endorsed.");
+        require(endorsements[addr] != endorseState.ENDORSED, "This contract has already been endorsed.");
         require(endorsements[addr] != endorseState.REQUESTED, "The signature has already been requested.");
         endorsements[addr] = endorseState.REQUESTED;
         emit EndorsementRequested(addr);
@@ -119,8 +116,71 @@ contract Endorsable is Ownable {
     }
 
     function endorseAddress(address addr) external onlyOwner {
+        require(addr.code.length > 0, "Only contracts can be endorsed.");
         Endorsable otherContract = Endorsable(addr);
         otherContract.endorse();
     }
 }
 ```
+
+## Installation
+
+### Prerequisites
+
+- **Foundry**: Install Foundry for Solidity testing.
+  ```sh
+  curl -L https://foundry.paradigm.xyz | bash
+  foundryup
+  ```
+- **Node.js & NPM** (if using Hardhat for testing)
+  ```sh
+  npm install -g hardhat
+  ```
+
+### Clone the Repository
+
+```sh
+git clone https://github.com/YOUR_GITHUB/Endorsable.git
+cd Endorsable
+```
+
+### Install Dependencies
+
+```sh
+forge install
+```
+
+## Running Tests
+
+To test the contract, run:
+
+```sh
+forge test
+```
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Authors
+
+- **5Swim Ltd / Bruce Donovan**
+
+## Contributing
+
+Feel free to fork, submit issues, or open a pull request if you’d like to contribute!
+
+## Security Considerations
+
+- Ensure only trusted contracts inherit from `Endorsable`.
+- Be cautious of reentrancy attacks and always follow best Solidity security practices.
+- If used for critical endorsements, consider adding multi-signature verification.
+
+## Contact
+
+For inquiries, please open an issue on GitHub or contact the author directly.
+
+---
+
+*This README was auto-generated for the Endorsable contract suite.*
+
