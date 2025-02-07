@@ -23,14 +23,14 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Endorsable is Ownable {
-    mapping(address => endorseState) private endorsements;
+    mapping(address => uint8) private endorsements;
     enum endorseState {
-        UNASSIGNED,
-        REQUESTED,
-        ENDORSED,
-        REVOKED,
-        REMOVED,
-        BLACKLISTED
+        UNASSIGNED,  // 0
+        REQUESTED,   // 1
+        ENDORSED,    // 2
+        REVOKED,     // 3
+        REMOVED,     // 4
+        BLACKLISTED  // 5
     }
 
     event Endorsed(address indexed endorser);
