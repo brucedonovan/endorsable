@@ -23,21 +23,27 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Endorsable is Ownable {
+    mapping(address => endorseState) private endorsements;
+    enum endorseState {
+        UNASSIGNED,
+        REQUESTED,
+        ENDORSED,
+        REVOKED,
+        REMOVED,
+        BLACKLISTED
+    }
 
-    mapping (address=>endorseState) private endorsements;
-    enum endorseState {UNASSIGNED, REQUESTED, ENDORSED, REVOKED, REMOVED, BLACKLISTED}
-    
     event Endorsed(address indexed endorser);
     event EndorsementRevoked(address indexed endorser);
     event EndorsementRequested(address indexed addr);
     event EndorsementRemoved(address indexed addr);
 
-    /// @dev Empty internal constructor, to prevent people from mistakenly deploying
-    /// an instance of this contract, which should be used via inheritance.
+    /// @dev empty internal constructor, to prevent people from mistakenly deploying
+    /// an instance of this contract, which should be used via inheritance. It also sets the ownership.
     // solium-disable-next-line
     constructor() Ownable(msg.sender) {}
 
-    /// @notice tx sender endorses the contract, only if requested to do so.
+    /// @notice tx sender endorses the contract, ONLY if requested to do so.
     /// @dev endorses a contract
     function endorse() external {
         require(
@@ -66,24 +72,20 @@ contract Endorsable is Ownable {
             endorsements[addr] != endorseState.ENDORSED,
             "This item has already been endorsed."
         );
-        if (endorsements[msg.sender] == endorseState.REQUESTED) {
-            revert("The signature has already been requested.");
-        }
+        require(
+            endorsements[addr] != endorseState.REQUESTED,
+            "The signature has already been requested."
+        );
         endorsements[addr] = endorseState.REQUESTED;
         emit EndorsementRequested(addr);
     }
 
     /// @dev removes any address that has previously signed the item
     function removeEndorsement(address addr) external onlyOwner {
-
         require(
             endorsements[addr] == endorseState.ENDORSED,
             "Element not endorsed, or previously revoked or removed"
         );
-        // require(
-        //     endorsements[msg.sender] == endorseState.ENDORSED,
-        //     "Element not endorsed, or previously revoked or removed"
-        // );
         endorsements[addr] = endorseState.REMOVED;
         emit EndorsementRemoved(addr);
     }
@@ -91,13 +93,14 @@ contract Endorsable is Ownable {
     /// Returns if the signature is requested.
     /// @dev retrieves the state of the endorsement
     /// @return endorseState representing the endorsement state of the contract
-    function getEndorsementStatus(address addr) public view returns (endorseState) {
+    function getEndorsementStatus(
+        address addr
+    ) public view returns (endorseState) {
         return endorsements[addr];
     }
 
-    function endorseAddress(address _addr) external onlyOwner {
-        Endorsable otherContract = Endorsable(_addr);
+    function endorseAddress(address addr) external onlyOwner {
+        Endorsable otherContract = Endorsable(addr);
         otherContract.endorse();
     }
-
 }

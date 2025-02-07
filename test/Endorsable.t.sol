@@ -21,12 +21,19 @@ contract EndorsableTest is Test {
         assertEq(uint(endorsable.getEndorsementStatus(user1)), uint(Endorsable.endorseState.REQUESTED));
     }
 
+    function testCannotRequestEndorsementIfAlreadyRequested() public {
+        vm.prank(owner);
+        endorsable.requestEndorsement(user1);
+        vm.prank(owner);
+        vm.expectRevert("The signature has already been requested.");
+        endorsable.requestEndorsement(user1);
+    }
+
     function testCannotRequestEndorsementIfAlreadyEndorsed() public {
         vm.prank(owner);
         endorsable.requestEndorsement(user1);
         vm.prank(user1);
         endorsable.endorse();
-        
         vm.prank(owner);
         vm.expectRevert("This item has already been endorsed.");
         endorsable.requestEndorsement(user1);

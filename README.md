@@ -1,66 +1,126 @@
-## Foundry
+# Endorsable Smart Contract Suite
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+## Overview
+The `Endorsable` smart contract suite provides a structured way to request, grant, revoke, and remove endorsements from addresses. It enforces explicit endorsement requests and owner-controlled endorsement management, ensuring secure and controlled endorsement flows.
 
-Foundry consists of:
+## Features
+- **Endorsement Requests**: The contract owner can request an endorsement from any address.
+- **Endorsement Granting**: A requested address can grant endorsement.
+- **Revoking Endorsement**: Users can revoke their endorsement.
+- **Removing Endorsements**: The owner can remove an endorsement.
+- **Endorse Another Contract**: The owner can trigger an endorsement on another `Endorsable` contract.
+- **Permission Control**: Uses OpenZeppelin’s `Ownable` for access control.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Installation
+### Prerequisites
+- **Foundry**: Install Foundry for Solidity testing.
+  ```sh
+  curl -L https://foundry.paradigm.xyz | bash
+  foundryup
+  ```
+- **Node.js & NPM** (if using Hardhat for testing)
+  ```sh
+  npm install -g hardhat
+  ```
 
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+### Clone the Repository
+```sh
+git clone https://github.com/YOUR_GITHUB/Endorsable.git
+cd Endorsable
 ```
 
-### Test
-
-```shell
-$ forge test
+### Install Dependencies
+```sh
+forge install
 ```
 
-### Format
-
-```shell
-$ forge fmt
+## Running Tests
+To test the contract, run:
+```sh
+forge test
 ```
 
-### Gas Snapshots
-
-```shell
-$ forge snapshot
+## Deployment
+### Deploy Using Foundry
+```sh
+forge create --private-key YOUR_PRIVATE_KEY src/Endorsable.sol:Endorsable
 ```
 
-### Anvil
+### Deploy Using Hardhat
+1. Create a deployment script inside `scripts/deploy.js`.
+2. Deploy the contract:
+   ```sh
+   npx hardhat run scripts/deploy.js --network goerli
+   ```
 
-```shell
-$ anvil
-```
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-### Deploy
+## Authors
+- **5Swim Ltd / Bruce Donovan**
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
+## Contributing
+Feel free to fork, submit issues, or open a pull request if you’d like to contribute!
 
-### Cast
+## Security Considerations
+- Ensure the contract is only deployed on trusted networks.
+- Be cautious of reentrancy attacks and always follow best Solidity security practices.
 
-```shell
-$ cast <subcommand>
-```
+## Contact
+For inquiries, please open an issue on GitHub or contact the author directly.
 
-### Help
+---
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+## Smart Contract
+### **Endorsable.sol**
+```solidity
+pragma solidity ^0.8.13;
+
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Endorsable is Ownable {
+    enum endorseState { UNASSIGNED, REQUESTED, ENDORSED, REVOKED, REMOVED, BLACKLISTED }
+    mapping(address => endorseState) private endorsements;
+
+    event Endorsed(address indexed endorser);
+    event EndorsementRevoked(address indexed endorser);
+    event EndorsementRequested(address indexed addr);
+    event EndorsementRemoved(address indexed addr);
+
+    constructor() Ownable(msg.sender) {}
+
+    function endorse() external {
+        require(endorsements[msg.sender] == endorseState.REQUESTED, "Account has not been explicitly requested to endorse this item.");
+        endorsements[msg.sender] = endorseState.ENDORSED;
+        emit Endorsed(msg.sender);
+    }
+
+    function revokeEndorsement() external {
+        require(endorsements[msg.sender] == endorseState.ENDORSED, "Element not endorsed, or previously revoked or removed");
+        endorsements[msg.sender] = endorseState.REVOKED;
+        emit EndorsementRevoked(msg.sender);
+    }
+
+    function requestEndorsement(address addr) external onlyOwner {
+        require(endorsements[addr] != endorseState.ENDORSED, "This item has already been endorsed.");
+        require(endorsements[addr] != endorseState.REQUESTED, "The signature has already been requested.");
+        endorsements[addr] = endorseState.REQUESTED;
+        emit EndorsementRequested(addr);
+    }
+
+    function removeEndorsement(address addr) external onlyOwner {
+        require(endorsements[addr] == endorseState.ENDORSED, "Element not endorsed, or previously revoked or removed");
+        endorsements[addr] = endorseState.REMOVED;
+        emit EndorsementRemoved(addr);
+    }
+
+    function getEndorsementStatus(address addr) public view returns (endorseState) {
+        return endorsements[addr];
+    }
+
+    function endorseAddress(address addr) external onlyOwner {
+        Endorsable otherContract = Endorsable(addr);
+        otherContract.endorse();
+    }
+}
 ```
