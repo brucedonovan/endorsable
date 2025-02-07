@@ -38,7 +38,7 @@ The `Endorsable` smart contract is designed to be inherited by other contracts, 
 - (**Endorse Another Contract**: The owner can trigger an endorsement on another `Endorsable` contract.) -- under consideration
 - **Permission Control**: Uses OpenZeppelin’s `Ownable` for access control.
 
-## Usage
+## Basic Usage
 
 To use `Endorsable`, download the package:
 
@@ -53,7 +53,7 @@ or
 
 (TODO add foundry install feature)
 
-and then inherit it in your contract:
+and then inherit it in any contract that you wish to be endorsable:
 
 ```solidity
 pragma solidity ^0.8.13;
@@ -67,6 +67,41 @@ contract MyContract is Endorsable {
         // Custom logic here
     }
 }
+```
+
+## Development Installation
+
+### Prerequisites
+
+- **Foundry**: Install Foundry for Solidity testing.
+  ```sh
+  curl -L https://foundry.paradigm.xyz | bash
+  foundryup
+  ```
+- **Node.js & NPM** (if using Hardhat for testing)
+  ```sh
+  npm install -g hardhat
+  ```
+
+### Clone the Repository
+
+```sh
+git clone https://github.com/YOUR_GITHUB/Endorsable.git
+cd Endorsable
+```
+
+### Install Dependencies
+
+```sh
+forge install
+```
+
+## Running Tests
+
+To test the contract, run:
+
+```sh
+forge test
 ```
 
 ## Smart Contract
@@ -126,41 +161,6 @@ contract Endorsable is Ownable {
         otherContract.endorse();
     }
 }
-```
-
-## Installation
-
-### Prerequisites
-
-- **Foundry**: Install Foundry for Solidity testing.
-  ```sh
-  curl -L https://foundry.paradigm.xyz | bash
-  foundryup
-  ```
-- **Node.js & NPM** (if using Hardhat for testing)
-  ```sh
-  npm install -g hardhat
-  ```
-
-### Clone the Repository
-
-```sh
-git clone https://github.com/YOUR_GITHUB/Endorsable.git
-cd Endorsable
-```
-
-### Install Dependencies
-
-```sh
-forge install
-```
-
-## Running Tests
-
-To test the contract, run:
-
-```sh
-forge test
 ```
 
 ## License
