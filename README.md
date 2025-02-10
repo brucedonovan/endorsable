@@ -103,57 +103,72 @@ To test the contract, run:
 forge test
 ```
 
-## Smart Contract
+## Smart Contract Interface
 
-### **Endorsable.sol**
+### **IEndorsable.sol**
 
 ```solidity
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+interface IEndorsable {
+    /// @dev Enum representing the possible endorsement states for an address:
+    /// 0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED
+    enum endorseState {
+        UNASSIGNED,
+        REQUESTED,
+        ENDORSED,
+        REVOKED,
+        REMOVED
+    }
 
-contract Endorsable is Ownable {
-    enum endorseState { UNASSIGNED, REQUESTED, ENDORSED, REVOKED, REMOVED, BLACKLISTED }
-    mapping(address => endorseState) private endorsements;
-
+    /// @dev Emitted when an address endorses itself.
     event Endorsed(address indexed endorser);
+
+    /// @dev Emitted when an address revokes its own endorsement.
     event EndorsementRevoked(address indexed endorser);
+
+    /// @dev Emitted when the contract owner requests an endorsement for a given address.
     event EndorsementRequested(address indexed addr);
+
+    /// @dev Emitted when the contract owner removes an existing or requested endorsement for a given address.
     event EndorsementRemoved(address indexed addr);
 
-    constructor() Ownable(msg.sender) {}
+    /// @dev (If used) Emitted when an address is blacklisted, though it's commented out in the main contract.
+    event Blacklisted(address indexed addr);
 
-    function endorse() external {
-        require(endorsements[msg.sender] == endorseState.REQUESTED, "Contract has not been explicitly requested to endorse this item.");
-        require(msg.sender.code.length > 0, "Only contracts can be endorsed.");
-        endorsements[msg.sender] = endorseState.ENDORSED;
-        emit Endorsed(msg.sender);
-    }
+    /**
+     * @notice Endorses the caller (sets status to ENDORSED if previously REQUESTED).
+     * @dev Reverts if the caller is not in the REQUESTED state.
+     */
+    function endorse() external;
 
-    function revokeEndorsement() external {
-        require(endorsements[msg.sender] == endorseState.ENDORSED, "Element not endorsed, or previously revoked or removed");
-        endorsements[msg.sender] = endorseState.REVOKED;
-        emit EndorsementRevoked(msg.sender);
-    }
+    /**
+     * @notice Revokes the caller’s endorsement (sets status to REVOKED if previously ENDORSED).
+     * @dev Reverts if the caller is not in the ENDORSED state.
+     */
+    function revokeEndorsement() external;
 
-    function requestEndorsement(address addr) external onlyOwner {
-        require(addr.code.length > 0, "Only contracts can be endorsed.");
-        require(endorsements[addr] != endorseState.ENDORSED, "This contract has already been endorsed.");
-        require(endorsements[addr] != endorseState.REQUESTED, "The signature has already been requested.");
-        endorsements[addr] = endorseState.REQUESTED;
-        emit EndorsementRequested(addr);
-    }
+    /**
+     * @notice Requests an endorsement for `addr`. (In the main contract, this is restricted by `onlyOwner`.)
+     * @dev Sets the status to REQUESTED unless it's already ENDORSED or REQUESTED.
+     * @param addr The address for which the request is made.
+     */
+    function requestEndorsement(address addr) external;
 
-    function removeEndorsement(address addr) external onlyOwner {
-        require(endorsements[addr] == endorseState.ENDORSED, "Element not endorsed, or previously revoked or removed");
-        endorsements[addr] = endorseState.REMOVED;
-        emit EndorsementRemoved(addr);
-    }
+    /**
+     * @notice Removes an existing or requested endorsement for `addr`. (In the main contract, this is restricted by `onlyOwner`.)
+     * @dev Changes the status from ENDORSED or REQUESTED to REMOVED.
+     * @param addr The address whose endorsement is to be removed.
+     */
+    function removeEndorsement(address addr) external;
 
-    function getEndorsementStatus(address addr) public view returns (endorseState) {
-        return endorsements[addr];
-    }
-
+    /**
+     * @notice Returns the endorsement status (0–4) for the specified address.
+     * @param addr The address whose endorsement status is being queried.
+     * @return uint8 representing the address's endorsement state.
+     */
+    function getEndorsementStatus(address addr) external view returns (uint8);
 }
 ```
 
