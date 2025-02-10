@@ -39,15 +39,12 @@ The `Endorsable` solidty contract is designed to be inherited by other contracts
 
 ## Basic Usage
 
-To use `Endorsable`, install the package via foundry:
+To use `Endorsable`, install the package via foundry, then update the `remappings.txt` file if required:
 ```sh
  forge install https://github.com/brucedonovan/endorsable.git
 ```
-then update the `remappings.txt` file if required.
 
-
-
-or alternatively use npm/yarn to download the package:
+or, alternatively use npm/yarn to download the package:
 ```sh
     npm install @brucedonovan/endorsable
 ```
