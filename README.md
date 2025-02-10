@@ -112,8 +112,10 @@ forge test
 pragma solidity ^0.8.13;
 
 interface IEndorsable {
-    /// @dev Enum representing the possible endorsement states for an address:
-    /// 0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED
+    /** 
+    * @dev Enum representing the possible endorsement states for an address:
+    * 0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED
+    */
     enum endorseState {
         UNASSIGNED,
         REQUESTED,
@@ -135,8 +137,8 @@ interface IEndorsable {
     event EndorsementRemoved(address indexed addr);
 
     /**
-    @notice Caller endorses the contract. Only possible if the contract owner has requested an endorsement.
-    @dev Sets the endorsement state for the caller to 'ENDORSED'. Reverts if the caller address does not have a 'REQUESTED' status.
+    * @notice Caller endorses the contract. Only possible if the contract owner has requested an endorsement.
+    * @dev Sets the endorsement state for the caller to 'ENDORSED'. Reverts if the caller address does not have a 'REQUESTED' status.
     */
     function endorse() external;
 
@@ -147,9 +149,9 @@ interface IEndorsable {
     function revokeEndorsement() external;
 
     /**
-    @notice Requests an endorsement from a specific contract/EOA.
-    @dev Sets the status to REQUESTED. This also resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'. Reverts if the contract is already ENDORSED or REQUESTED.  Only callable by the contract owner.
-    @param addr The address whose endorsement is requested.
+    * @notice Requests an endorsement from a specific contract/EOA.
+    * @dev Sets the status to REQUESTED. This also resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'. Reverts if the contract is already ENDORSED or REQUESTED.  * Only callable by the contract owner.
+    * @param addr The address whose endorsement is requested.
     */
     function requestEndorsement(address addr) external;
 
