@@ -12,20 +12,17 @@ interface IEndorsable {
         REMOVED
     }
 
-    /// @dev Emitted when an address endorses itself.
+    /// @dev Emitted when an address endorses the contract.
     event Endorsed(address indexed endorser);
 
     /// @dev Emitted when an address revokes its own endorsement.
     event EndorsementRevoked(address indexed endorser);
 
-    /// @dev Emitted when the contract owner requests an endorsement for a given address.
+    /// @dev Emitted when the contract owner requests an endorsement by a given address.
     event EndorsementRequested(address indexed addr);
 
-    /// @dev Emitted when the contract owner removes an existing or requested endorsement for a given address.
+    /// @dev Emitted when the contract owner removes an existing or requested endorsement.
     event EndorsementRemoved(address indexed addr);
-
-    /// @dev (If used) Emitted when an address is blacklisted, though it's commented out in the main contract.
-    event Blacklisted(address indexed addr);
 
     /**
      * @notice Endorses the caller (sets status to ENDORSED if previously REQUESTED).
@@ -47,7 +44,7 @@ interface IEndorsable {
     function requestEndorsement(address addr) external;
 
     /**
-     * @notice Removes an existing or requested endorsement for `addr`. (In the main contract, this is restricted by `onlyOwner`.)
+     * @notice Removes an existing or requested endorsement for `addr` (In the main contract, this is restricted by `onlyOwner`.)
      * @dev Changes the status from ENDORSED or REQUESTED to REMOVED.
      * @param addr The address whose endorsement is to be removed.
      */

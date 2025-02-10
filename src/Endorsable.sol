@@ -23,13 +23,18 @@ pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+/// @title Endorsable
+/// @author Bruce Donovan
+/// @notice An inheritable contract that allows the contract to be endorsed by another contract/EOA.
+/// @dev This contract is intended to be inherited by other contracts that require endorsement functionality.
 contract Endorsable is Ownable {
-    /// @dev Stores the endorsement status for each address.
-    ///      0 = Unassigned, 1 = Requested, 2 = Endorsed, 3 = Revoked, 4 = Removed.
+    
+    /// @notice Stores the endorsement status for each address.
+    /// @dev We use uint8 for minor gas savings instead of a string-based approach.
     mapping(address => uint8) private endorsements;
 
-    /// @dev Enum representing the possible endorsement states for an address in this contract: (0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED).
-    /// @notice We use uint8 for minor gas savings instead of a string-based approach.
+    /// @notice Enum representing the possible endorsement states for an address in this contract: (0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED).
+    /// @dev We use uint8 for minor gas savings instead of a string-based approach.
     enum endorseState {
         UNASSIGNED, //0
         REQUESTED, //1
@@ -49,24 +54,25 @@ contract Endorsable is Ownable {
     /// @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance.
     constructor() Ownable(msg.sender) {}
 
-    /// @dev Sets the endorsement state for the caller to 'ENDORSED' if their status was previously 'REQUESTED'.
-    /// @notice The caller must currently have a 'REQUESTED' status in order to endorse.
+    /// @notice Sets the endorsement state for the caller to 'ENDORSED' if their status was previously 'REQUESTED'.
+    /// @dev The caller must currently have a 'REQUESTED' status in order to endorse.
     function endorse() external {
         require(endorsements[msg.sender] == uint8(endorseState.REQUESTED), "Endorsement not requested.");
         endorsements[msg.sender] = uint8(endorseState.ENDORSED);
         emit Endorsed(msg.sender);
     }
 
-    /// @dev Allows the caller to revoke their own endorsement.
-    /// @notice If the caller is not currently 'ENDORSED', this call reverts (so it remains in its previous state).
+    /// @notice Allows the caller to revoke their own endorsement.
+    /// @dev If the caller is not currently 'ENDORSED', this call reverts (so it remains in its previous state).
     function revokeEndorsement() external {
         require(endorsements[msg.sender] == uint8(endorseState.ENDORSED), "Not endorsed, already revoked, or removed.");
         endorsements[msg.sender] = uint8(endorseState.REVOKED);
         emit EndorsementRevoked(msg.sender);
     }
 
-    /// @dev Requests an endorsement for a specific address, only callable by the contract owner.
-    /// @notice This resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'.
+    /// @notice Requests an endorsement for a specific address.
+    /// @dev This resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'. Only callable by the contract owner.
+    /// @param addr The address whose endorsement is requested.
     function requestEndorsement(address addr) external onlyOwner {
         require(endorsements[addr] != uint8(endorseState.ENDORSED), "Already endorsed.");
         require(endorsements[addr] != uint8(endorseState.REQUESTED), "Already requested.");
@@ -78,8 +84,9 @@ contract Endorsable is Ownable {
         emit EndorsementRequested(addr);
     }
 
-    /// @dev Removes an endorsement or request for the specified address, only callable by the contract owner.
-    /// @notice This changes an 'ENDORSED' or 'REQUESTED' status to 'REMOVED'.
+    /// @notice Removes an endorsement or request for the specified address.
+    /// @dev This changes an 'ENDORSED' or 'REQUESTED' status to 'REMOVED'. Only callable by the contract owner.
+    /// @param addr The address whose endorsement is to be removed.
     function removeEndorsement(address addr) external onlyOwner {
         require(
             endorsements[addr] == uint8(endorseState.ENDORSED) || endorsements[addr] == uint8(endorseState.REQUESTED),
@@ -96,7 +103,7 @@ contract Endorsable is Ownable {
     //     emit Blacklisted(addr);
     // }
 
-    /// @dev Returns the endorsement status (0–4) for the specified address.
+    /// @notice Returns the endorsement status (0–4) for the specified address.
     /// @param addr The address whose endorsement status is being queried.
     /// @return uint8 representing the address's endorsement state.
     function getEndorsementStatus(address addr) public view returns (uint8) {
