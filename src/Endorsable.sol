@@ -55,14 +55,14 @@ contract Endorsable is Ownable {
     event EndorsementRequested(address indexed addr, string comment);
     event EndorsementRemoved(address indexed addr, string comment);
 
-    /** 
-    * @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
-    */
+    /**
+     * @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
+     */
     constructor() Ownable(msg.sender) {}
 
     /**
      * @notice Contract is endorsed by the caller. This only possible if the contract owner has requested an endorsement.
-     * @dev Sets the endorsement state for the caller to 'ENDORSED'. Reverts if the caller address does not have a 'REQUESTED' status. 
+     * @dev Sets the endorsement state for the caller to 'ENDORSED'. Reverts if the caller address does not have a 'REQUESTED' status.
      * @param comment Any additional information about the endorsement, included in the emitted event.
      */
     function endorse(string calldata comment) external {

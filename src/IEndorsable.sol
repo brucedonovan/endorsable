@@ -31,7 +31,7 @@ interface IEndorsable {
      * @dev Sets the endorsement state for the caller to 'ENDORSED'. Reverts if the caller address does not have a 'REQUESTED' status.
      * @param comment Any additional information about the endorsement, included in the emitted event.
      */
-    function endorse( string calldata comment ) external;
+    function endorse(string calldata comment) external;
 
     /**
      * @notice Revokes the caller’s endorsement on the contract.
@@ -42,7 +42,7 @@ interface IEndorsable {
 
     /**
      * @notice Requests an endorsement from a specific address.
-     * @dev Sets the status to REQUESTED. This also resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'. Reverts if the contract is already ENDORSED or REQUESTED.  
+     * @dev Sets the status to REQUESTED. This also resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'. Reverts if the contract is already ENDORSED or REQUESTED.
      * Only callable by the contract owner.
      * @param addr The address whose endorsement is requested.
      * @param comment Any additional information about the request, included in the emitted event.
