@@ -36,7 +36,7 @@ contract EndorsableTest is Test {
 
     function testCannotEndorseWithoutRequest() public {
         vm.prank(user1);
-        vm.expectRevert("Endorsement not requested");
+        vm.expectRevert("Endorsement not requested.");
         endorsable.endorse();
     }
 
