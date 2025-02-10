@@ -48,7 +48,7 @@ contract Endorsable is Ownable {
     /// @notice tx sender endorses the contract, ONLY if requested to do so.
     /// @dev endorses a contract
     function endorse() external {
-        require(endorsements[msg.sender] == uint8(endorseState.REQUESTED), "Endorsement not requested");
+        require(endorsements[msg.sender] == uint8(endorseState.REQUESTED), "Endorsement not requested.");
         endorsements[msg.sender] = uint8(endorseState.ENDORSED);
         emit Endorsed(msg.sender);
     }
@@ -96,4 +96,5 @@ contract Endorsable is Ownable {
     function getEndorsementStatus(address addr) public view returns (uint8) {
         return endorsements[addr];
     }
+
 }
