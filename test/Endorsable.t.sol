@@ -240,10 +240,7 @@ contract EndorsableTest is Test {
      * @notice Fuzz test for requesting endorsements with arbitrary addresses.
      * @dev We skip address(0) or contract addresses if desired, but here we keep it simple.
      */
-    function testFuzz_RequestEndorsement(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_RequestEndorsement(address randomAddr, string memory comment) public {
         // Only the owner can request
         vm.prank(owner);
 
@@ -261,10 +258,7 @@ contract EndorsableTest is Test {
     /**
      * @notice Fuzz test that once requested, random address can successfully call `endorse()`.
      */
-    function testFuzz_EndorseAfterRequest(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_EndorseAfterRequest(address randomAddr, string memory comment) public {
         // Only allow fuzzed addresses that aren't the zero address to reduce meaningless calls
         vm.assume(randomAddr != address(0));
 
@@ -284,10 +278,7 @@ contract EndorsableTest is Test {
     /**
      * @notice Fuzz test for revoking endorsement from random addresses (only valid if state is ENDORSED).
      */
-    function testFuzz_RevokeEndorsement(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_RevokeEndorsement(address randomAddr, string memory comment) public {
         vm.assume(randomAddr != address(0));
 
         // 1) Request
@@ -310,10 +301,7 @@ contract EndorsableTest is Test {
     /**
      * @notice Fuzz test for removing endorsements from random addresses (only owner can remove).
      */
-    function testFuzz_RemoveEndorsement(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_RemoveEndorsement(address randomAddr, string memory comment) public {
         vm.assume(randomAddr != address(0));
 
         // 1) Request
