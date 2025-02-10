@@ -6,9 +6,9 @@ The `Endorsable` solidty contract is designed to be inherited by other contracts
 
 ### **Key Benefits**
 
-- **Standardized Endorsement Workflow**: Contracts can be endorsed by any other contracts or EOAs.
+- **Standardized Endorsement Workflow**: Any subscribing contract can be endorsed by any other contracts or EOAs (only if requested).
 - **Trust & Reputation Management**: Useful in permissioned environments like DAOs, audits, and credentialing.
-- **Security & Transparency**: Built with OpenZeppelin’s `Ownable` contract for uncomplicated access control.
+- **Security & Transparency**: The contract is designed to be as simple/clear as possible. It is also built with OpenZeppelin’s `Ownable` contract for uncomplicated access control.
 
 ### **Potential Use Cases**
 

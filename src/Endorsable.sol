@@ -32,7 +32,6 @@ contract Endorsable is Ownable {
         REVOKED, // 3
         REMOVED // 4
             // BLACKLISTED // 5
-
     }
 
     event Endorsed(address indexed endorser);
