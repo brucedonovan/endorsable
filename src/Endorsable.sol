@@ -36,7 +36,8 @@ contract Endorsable is Ownable {
         ENDORSED, //2
         REVOKED, //3
         REMOVED //4
-        // BLACKLISTED //5
+            // BLACKLISTED //5
+
     }
 
     event Endorsed(address indexed endorser);
@@ -51,10 +52,7 @@ contract Endorsable is Ownable {
     /// @dev Sets the endorsement state for the caller to 'ENDORSED' if their status was previously 'REQUESTED'.
     /// @notice The caller must currently have a 'REQUESTED' status in order to endorse.
     function endorse() external {
-        require(
-            endorsements[msg.sender] == uint8(endorseState.REQUESTED),
-            "Endorsement not requested."
-        );
+        require(endorsements[msg.sender] == uint8(endorseState.REQUESTED), "Endorsement not requested.");
         endorsements[msg.sender] = uint8(endorseState.ENDORSED);
         emit Endorsed(msg.sender);
     }
@@ -62,10 +60,7 @@ contract Endorsable is Ownable {
     /// @dev Allows the caller to revoke their own endorsement.
     /// @notice If the caller is not currently 'ENDORSED', this call reverts (so it remains in its previous state).
     function revokeEndorsement() external {
-        require(
-            endorsements[msg.sender] == uint8(endorseState.ENDORSED),
-            "Not endorsed, already revoked, or removed."
-        );
+        require(endorsements[msg.sender] == uint8(endorseState.ENDORSED), "Not endorsed, already revoked, or removed.");
         endorsements[msg.sender] = uint8(endorseState.REVOKED);
         emit EndorsementRevoked(msg.sender);
     }
@@ -73,14 +68,8 @@ contract Endorsable is Ownable {
     /// @dev Requests an endorsement for a specific address, only callable by the contract owner.
     /// @notice This resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'.
     function requestEndorsement(address addr) external onlyOwner {
-        require(
-            endorsements[addr] != uint8(endorseState.ENDORSED),
-            "Already endorsed."
-        );
-        require(
-            endorsements[addr] != uint8(endorseState.REQUESTED),
-            "Already requested."
-        );
+        require(endorsements[addr] != uint8(endorseState.ENDORSED), "Already endorsed.");
+        require(endorsements[addr] != uint8(endorseState.REQUESTED), "Already requested.");
         // require(
         //     endorsements[addr] != uint8(endorseState.BLACKLISTED),
         //     "Cannot request from blacklisted address."
@@ -93,8 +82,7 @@ contract Endorsable is Ownable {
     /// @notice This changes an 'ENDORSED' or 'REQUESTED' status to 'REMOVED'.
     function removeEndorsement(address addr) external onlyOwner {
         require(
-            endorsements[addr] == uint8(endorseState.ENDORSED) ||
-                endorsements[addr] == uint8(endorseState.REQUESTED),
+            endorsements[addr] == uint8(endorseState.ENDORSED) || endorsements[addr] == uint8(endorseState.REQUESTED),
             "Not endorsed or requested."
         );
         endorsements[addr] = uint8(endorseState.REMOVED);
