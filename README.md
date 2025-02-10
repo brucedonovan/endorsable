@@ -2,13 +2,13 @@
 
 ## Overview
 
-The `Endorsable` solidty contract is designed to be inherited by other contracts, providing a structured mechanism for managing endorsements. It ensures that endorsements are explicitly requested, granted, revoked, or removed, making it ideal for use cases where verification, trust, and reputation tracking are essential.
+The `Endorsable` solidty contract is designed to be inherited by other contracts, providing a structured standardised mechanism for managing endorsements. It ensures that endorsements are explicitly requested, granted, revoked, or removed, making it ideal for use cases where verification, trust, and reputation tracking are essential.
 
 ### **Key Benefits**
 
 - **Standardized Endorsement Workflow**: Any subscribing contract can be endorsed by any other contracts or EOAs (only if requested).
 - **Trust & Reputation Management**: Useful in permissioned environments like DAOs, audits, and credentialing.
-- **Security & Transparency**: The contract is designed to be as simple/clear as possible. It is also built with OpenZeppelin’s `Ownable` contract for uncomplicated access control.
+- **Security & Transparency**: The contract is designed to be as simple/clear as possible. It is also built with OpenZeppelin’s `Ownable` contract for uncomplicated access control. (TODO: consider `ownership2step` extension )
 
 ### **Potential Use Cases**
 
@@ -35,7 +35,7 @@ The `Endorsable` solidty contract is designed to be inherited by other contracts
 - **Endorsement Granting**: A requested contract/account can grant endorsement.
 - **Revoking Endorsement**: Contracts can revoke their endorsement.
 - **Removing Endorsements**: The owner can remove an endorsement.
-- **Simplified Permission Control**: Uses OpenZeppelin’s `Ownable` for simple access control.
+- **Simplified Permission Control**: Uses OpenZeppelin’s `Ownable` for simple access control (possibly loking at using `Ownable2step` extension)
 
 ## Basic Usage
 

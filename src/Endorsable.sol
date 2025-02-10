@@ -21,12 +21,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 pragma solidity ^0.8.13;
 
-import "@openzeppelin/contracts/access/Ownable2step.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Endorsable
  * @author Bruce Donovan
- * @notice An inheritable contract that allows the contract to be endorsed by another contract/EOA.
+ * @notice An inheritable contract that allows the parent contract to be endorsed by another addresses (contracts or EOAs).
  * @dev This contract is intended to be inherited by other contracts that require endorsement functionality.
  */
 contract Endorsable is Ownable {
@@ -56,7 +56,9 @@ contract Endorsable is Ownable {
     event EndorsementRemoved(address indexed addr);
     event Blacklisted(address indexed addr);
 
-    /// @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance.
+    /** 
+    * @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
+    */
     constructor() Ownable(msg.sender) {}
 
     /**
