@@ -85,10 +85,10 @@ contract MyContract is Endorsable {
 ### Clone the Repository
 
 ```sh
-git clone https://github.com/YOUR_GITHUB/Endorsable.git
+git clone https://github.com/brucedonovan/Endorsable.git
 cd Endorsable
 ```
-
+ 
 ### Install Dependencies
 
 ```sh
