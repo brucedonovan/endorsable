@@ -60,10 +60,10 @@ pragma solidity ^0.8.13;
 import "./Endorsable.sol";
 
 contract MyContract is Endorsable {
-    constructor() Endorsable() {}
-
-    function myFunction() external {
-        // Custom logic here
+    
+    // ...
+    function anyFunction() external {
+        // ... 
     }
 }
 ```
