@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /*
 The MIT License (MIT)
 Copyright (c) 2024 5Swim Ltd / Bruce Donovan.
@@ -23,17 +24,19 @@ pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Endorsable is Ownable {
-    mapping(address => endorseState) private endorsements;
+    /// @dev Stores the endorsement status for each address.
+    ///      0 = Unassigned, 1 = Requested, 2 = Endorsed, 3 = Revoked, 4 = Removed.
+    mapping(address => uint8) private endorsements;
 
-    /// @dev Enum representing the state of the endorsement state.
-    /// @notice We could have used uint8 to save minor gas, but instead opted for the more readable and self-documenting string option.
+    /// @dev Enum representing the possible endorsement states for an address in this contract: (0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED).
+    /// @notice We use uint8 for minor gas savings instead of a string-based approach.
     enum endorseState {
-        UNASSIGNED, 
-        REQUESTED,
-        ENDORSED,
-        REVOKED,
-        REMOVED
-        // BLACKLISTED
+        UNASSIGNED, //0
+        REQUESTED, //1
+        ENDORSED, //2
+        REVOKED, //3
+        REMOVED //4
+        // BLACKLISTED //5
     }
 
     event Endorsed(address indexed endorser);
@@ -42,61 +45,73 @@ contract Endorsable is Ownable {
     event EndorsementRemoved(address indexed addr);
     event Blacklisted(address indexed addr);
 
-    /// @dev empty internal constructor, to prevent people from mistakenly deploying
-    /// an instance of this contract, which should be used via inheritance. It also sets the ownership.
-    // solium-disable-next-line
+    /// @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance.
     constructor() Ownable(msg.sender) {}
 
-    /// @notice tx sender endorses the contract, ONLY if requested to do so.
-    /// @dev endorses a contract
+    /// @dev Sets the endorsement state for the caller to 'ENDORSED' if their status was previously 'REQUESTED'.
+    /// @notice The caller must currently have a 'REQUESTED' status in order to endorse.
     function endorse() external {
-        require(endorsements[msg.sender] == endorseState.REQUESTED, "Endorsement not requested.");
-        endorsements[msg.sender] = endorseState.ENDORSED;
+        require(
+            endorsements[msg.sender] == uint8(endorseState.REQUESTED),
+            "Endorsement not requested."
+        );
+        endorsements[msg.sender] = uint8(endorseState.ENDORSED);
         emit Endorsed(msg.sender);
     }
 
-    /// @notice tx sender revokes thier address from endorsements
-    /// @dev if not endorsed yet, it remains in the list as requested
+    /// @dev Allows the caller to revoke their own endorsement.
+    /// @notice If the caller is not currently 'ENDORSED', this call reverts (so it remains in its previous state).
     function revokeEndorsement() external {
-        require(endorsements[msg.sender] == endorseState.ENDORSED, "Not endorsed, already revoked, or removed.");
-        endorsements[msg.sender] = endorseState.REVOKED;
+        require(
+            endorsements[msg.sender] == uint8(endorseState.ENDORSED),
+            "Not endorsed, already revoked, or removed."
+        );
+        endorsements[msg.sender] = uint8(endorseState.REVOKED);
         emit EndorsementRevoked(msg.sender);
     }
 
-    /// @dev Adds an address to the signatures requested
-    /// Note: this will revert 'Removed' and 'Revoked' statuses back to 'Requested'.
+    /// @dev Requests an endorsement for a specific address, only callable by the contract owner.
+    /// @notice This resets any 'REMOVED' or 'REVOKED' status back to 'REQUESTED'.
     function requestEndorsement(address addr) external onlyOwner {
-        require(endorsements[addr] != endorseState.ENDORSED, "Already endorsed.");
-        require(endorsements[addr] != endorseState.REQUESTED, "Already requested.");
+        require(
+            endorsements[addr] != uint8(endorseState.ENDORSED),
+            "Already endorsed."
+        );
+        require(
+            endorsements[addr] != uint8(endorseState.REQUESTED),
+            "Already requested."
+        );
         // require(
-        //     endorsements[addr] != endorseState.BLACKLISTED,
+        //     endorsements[addr] != uint8(endorseState.BLACKLISTED),
         //     "Cannot request from blacklisted address."
         // );
-        endorsements[addr] = endorseState.REQUESTED;
+        endorsements[addr] = uint8(endorseState.REQUESTED);
         emit EndorsementRequested(addr);
     }
 
-    /// @dev removes any address that has previously signed the item
+    /// @dev Removes an endorsement or request for the specified address, only callable by the contract owner.
+    /// @notice This changes an 'ENDORSED' or 'REQUESTED' status to 'REMOVED'.
     function removeEndorsement(address addr) external onlyOwner {
         require(
-            endorsements[addr] == endorseState.ENDORSED || endorsements[addr] == endorseState.REQUESTED,
+            endorsements[addr] == uint8(endorseState.ENDORSED) ||
+                endorsements[addr] == uint8(endorseState.REQUESTED),
             "Not endorsed or requested."
         );
-        endorsements[addr] = endorseState.REMOVED;
+        endorsements[addr] = uint8(endorseState.REMOVED);
         emit EndorsementRemoved(addr);
     }
 
-    // /// @dev Blacklists an address, preventing future endorsements ( - IS THIS EVEN NEEDED? )
+    // /// @dev Blacklists an address, preventing future endorsements.
+    // /// @notice This would set the address status to 'BLACKLISTED' (5).
     // function blacklistAddress(address addr) external onlyOwner {
-    //     endorsements[addr] = endorseState.BLACKLISTED;
+    //     endorsements[addr] = uint8(endorseState.BLACKLISTED);
     //     emit Blacklisted(addr);
     // }
 
-    /// Returns if the signature is requested.
-    /// @dev retrieves the state of the endorsement
-    /// @return endorseState representing the endorsement state of the contract
-    function getEndorsementStatus(address addr) public view returns (endorseState) {
+    /// @dev Returns the endorsement status (0–4) for the specified address.
+    /// @param addr The address whose endorsement status is being queried.
+    /// @return uint8 representing the address's endorsement state.
+    function getEndorsementStatus(address addr) public view returns (uint8) {
         return endorsements[addr];
     }
-
 }
