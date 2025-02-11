@@ -99,8 +99,7 @@ contract Endorsable is Ownable {
      */
     function removeEndorsement(address addr, string calldata comment) external onlyOwner {
         require(
-            endorsements[addr] == State.ENDORSED || endorsements[addr] == State.REQUESTED,
-            "Not endorsed or requested."
+            endorsements[addr] == State.ENDORSED || endorsements[addr] == State.REQUESTED, "Not endorsed or requested."
         );
         endorsements[addr] = State.REMOVED;
         emit EndorsementRemoved(addr, comment);
