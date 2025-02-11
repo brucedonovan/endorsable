@@ -9,12 +9,6 @@ The contract enforces a clear endorsement lifecycle of requests, approvals, revo
 #### What’s New in v0.0.2-beta #### 
  - **Comment field**: All functions now support a comment parameter. This allows endorsers, revokers, and the contract owner to include additional contextual information in each action (This comment is only emitted with the corresponding event and not stored in the contract).
 
-### **Key Benefits**
-
-- **Standardized Endorsement Workflow**: Any subscribing contract can be endorsed by any other contracts or EOAs (only if requested).
-- **Trust & Reputation Management**: Useful in permissioned environments like DAOs, audits, and credentialing.
-- **Security & Transparency**: The contract is designed to be as simple/clear as possible. It is also built with OpenZeppelin’s `Ownable` contract for uncomplicated access control. (TODO: consider `ownership2step` extension )
-
 ### **Potential Use Cases**
 
 1. **Smart Contract Security Audits & Certifications**
@@ -33,6 +27,13 @@ The contract enforces a clear endorsement lifecycle of requests, approvals, revo
    - Used for managing a list of approved smart contracts that meet certain criteria.
    - Enables controlled interactions between verified contracts.
    - Example: A blockchain-based insurance system may only allow claims to be processed by endorsed contracts.
+
+### **Key Benefits**
+
+- **Standardized Endorsement Workflow**: Any subscribing contract can be endorsed by any other contracts or EOAs (only if requested).
+- **Trust & Reputation Management**: Useful in permissioned environments like DAOs, audits, and credentialing.
+- **Security & Transparency**: The contract is designed to be as simplea & clear as possible. It is also built with OpenZeppelin’s `Ownable` contract for uncomplicated access control. (TODO: consider `ownership2step` extension )
+
 
 ## Features
 
