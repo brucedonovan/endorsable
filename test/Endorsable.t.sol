@@ -65,8 +65,8 @@ contract EndorsableTest is Test {
         endorsable.requestEndorsement(testUser, "Requesting endorsement");
 
         // Confirm the state is REQUESTED
-        uint8 status = endorsable.getEndorsementStatus(testUser);
-        assertEq(status, 1, "Expected state: REQUESTED (1)");
+        Endorsable.State status = endorsable.getEndorsementStatus(testUser);
+        assertEq(uint8(status), uint8(Endorsable.State.REQUESTED), "Expected state: REQUESTED");
     }
 
     /**
@@ -116,8 +116,8 @@ contract EndorsableTest is Test {
         endorsable.endorse("Endorsing now");
 
         // Confirm the state is ENDORSED
-        uint8 status = endorsable.getEndorsementStatus(testUser);
-        assertEq(status, 2, "Expected state: ENDORSED (2)");
+        Endorsable.State status = endorsable.getEndorsementStatus(testUser);
+        assertEq(uint8(status), uint8(Endorsable.State.ENDORSED), "Expected state: ENDORSED");
     }
 
     /**
@@ -149,8 +149,8 @@ contract EndorsableTest is Test {
         endorsable.revokeEndorsement("Revoking endorsement");
 
         // Confirm the state is REVOKED
-        uint8 status = endorsable.getEndorsementStatus(testUser);
-        assertEq(status, 3, "Expected state: REVOKED (3)");
+        Endorsable.State status = endorsable.getEndorsementStatus(testUser);
+        assertEq(uint8(status), uint8(Endorsable.State.REVOKED), "Expected state: REVOKED");
     }
 
     /**
@@ -199,8 +199,8 @@ contract EndorsableTest is Test {
         endorsable.removeEndorsement(testUser, "Removing endorsement");
 
         // Confirm the state
-        uint8 status = endorsable.getEndorsementStatus(testUser);
-        assertEq(status, 4, "Expected state: REMOVED (4)");
+        Endorsable.State status = endorsable.getEndorsementStatus(testUser);
+        assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Expected state: REMOVED");
     }
 
     /**
@@ -218,8 +218,8 @@ contract EndorsableTest is Test {
         endorsable.removeEndorsement(testUser, "Removing un-endorsed request");
 
         // Confirm the state
-        uint8 status = endorsable.getEndorsementStatus(testUser);
-        assertEq(status, 4, "Expected state: REMOVED (4)");
+        Endorsable.State status = endorsable.getEndorsementStatus(testUser);
+        assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Expected state: REMOVED");
     }
 
     /**
@@ -251,8 +251,8 @@ contract EndorsableTest is Test {
         endorsable.requestEndorsement(randomAddr, comment);
 
         // Check state
-        uint8 status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(status, 1, "Should be REQUESTED (1)");
+        Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
+        assertEq(uint8(status), uint8(Endorsable.State.REQUESTED), "Should be REQUESTED");
     }
 
     /**
@@ -271,8 +271,8 @@ contract EndorsableTest is Test {
         endorsable.endorse(comment);
 
         // Check final state
-        uint8 status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(status, 2, "Should be ENDORSED (2)");
+        Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
+        assertEq(uint8(status), uint8(Endorsable.State.ENDORSED), "Should be ENDORSED");
     }
 
     /**
@@ -294,8 +294,8 @@ contract EndorsableTest is Test {
         endorsable.revokeEndorsement(comment);
 
         // Check final state
-        uint8 status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(status, 3, "Should be REVOKED (3)");
+        Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
+        assertEq(uint8(status), uint8(Endorsable.State.REVOKED), "Should be REVOKED");
     }
 
     /**
@@ -317,7 +317,7 @@ contract EndorsableTest is Test {
         endorsable.removeEndorsement(randomAddr, comment);
 
         // Check final state
-        uint8 status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(status, 4, "Should be REMOVED (4)");
+        Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
+        assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Should be REMOVED");
     }
 }

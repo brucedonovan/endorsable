@@ -32,22 +32,18 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Endorsable is Ownable {
     /**
      * @notice Stores the endorsement status for each address.
-     * @dev We use uint8 for minor gas savings instead of a string-based approach.
      */
-    mapping(address => uint8) private endorsements;
+    mapping(address => State) private endorsements;
 
     /**
      * @notice Enum representing the possible endorsement states for an address in this contract: (0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED).
-     * @dev We use uint8 for minor gas savings instead of a string-based approach.
      */
-    enum endorseState {
-        UNASSIGNED, //0
-        REQUESTED, //1
-        ENDORSED, //2
-        REVOKED, //3
-        REMOVED //4
-            // BLACKLISTED //5
-
+    enum State {
+        UNASSIGNED,
+        REQUESTED,
+        ENDORSED,
+        REVOKED,
+        REMOVED
     }
 
     event Endorsed(address indexed endorser, string comment);
@@ -66,8 +62,8 @@ contract Endorsable is Ownable {
      * @param comment Any additional information about the endorsement, included in the emitted event.
      */
     function endorse(string calldata comment) external {
-        require(endorsements[msg.sender] == uint8(endorseState.REQUESTED), "Endorsement not requested.");
-        endorsements[msg.sender] = uint8(endorseState.ENDORSED);
+        require(endorsements[msg.sender] == State.REQUESTED, "Endorsement not requested.");
+        endorsements[msg.sender] = State.ENDORSED;
         emit Endorsed(msg.sender, comment);
     }
 
@@ -77,8 +73,8 @@ contract Endorsable is Ownable {
      * @param comment Any additional information about the revoke, included in the emitted event.
      */
     function revokeEndorsement(string calldata comment) external {
-        require(endorsements[msg.sender] == uint8(endorseState.ENDORSED), "Not endorsed, already revoked, or removed.");
-        endorsements[msg.sender] = uint8(endorseState.REVOKED);
+        require(endorsements[msg.sender] == State.ENDORSED, "Not endorsed, already revoked, or removed.");
+        endorsements[msg.sender] = State.REVOKED;
         emit EndorsementRevoked(msg.sender, comment);
     }
 
@@ -89,13 +85,9 @@ contract Endorsable is Ownable {
      * @param comment Any additional information about the request, included in the emitted event.
      */
     function requestEndorsement(address addr, string calldata comment) external onlyOwner {
-        require(endorsements[addr] != uint8(endorseState.ENDORSED), "Already endorsed.");
-        require(endorsements[addr] != uint8(endorseState.REQUESTED), "Already requested.");
-        // require(
-        //     endorsements[addr] != uint8(endorseState.BLACKLISTED),
-        //     "Cannot request from blacklisted address."
-        // );
-        endorsements[addr] = uint8(endorseState.REQUESTED);
+        require(endorsements[addr] != State.ENDORSED, "Already endorsed.");
+        require(endorsements[addr] != State.REQUESTED, "Already requested.");
+        endorsements[addr] = State.REQUESTED;
         emit EndorsementRequested(addr, comment);
     }
 
@@ -107,19 +99,12 @@ contract Endorsable is Ownable {
      */
     function removeEndorsement(address addr, string calldata comment) external onlyOwner {
         require(
-            endorsements[addr] == uint8(endorseState.ENDORSED) || endorsements[addr] == uint8(endorseState.REQUESTED),
+            endorsements[addr] == State.ENDORSED || endorsements[addr] == State.REQUESTED,
             "Not endorsed or requested."
         );
-        endorsements[addr] = uint8(endorseState.REMOVED);
+        endorsements[addr] = State.REMOVED;
         emit EndorsementRemoved(addr, comment);
     }
-
-    // /// @dev Blacklists an address, preventing future endorsements.
-    // /// @notice This would set the address status to 'BLACKLISTED' (5).
-    // function blacklistAddress(address addr) external onlyOwner {
-    //     endorsements[addr] = uint8(endorseState.BLACKLISTED);
-    //     emit Blacklisted(addr);
-    // }
 
     /**
      * @notice Returns the endorsement status for the specified address.
@@ -127,7 +112,7 @@ contract Endorsable is Ownable {
      * @param addr The address whose endorsement status is being queried.
      * @return uint8 representing the address's endorsement state.
      */
-    function getEndorsementStatus(address addr) public view returns (uint8) {
+    function getEndorsementStatus(address addr) public view returns (State) {
         return endorsements[addr];
     }
 }
