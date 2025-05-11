@@ -52,9 +52,14 @@ contract Endorsable is Ownable {
     event EndorsementRemoved(address indexed addr, string comment);
 
     /**
-     * @dev Minimal constructor to ensure proper ownership is set. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
+     * @dev constructor to ensure proper ownership is set - and set pre-requested addresses, if required. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
      */
-    constructor() Ownable(msg.sender) {}
+    constructor( address[] memory _initialRequests ) Ownable(msg.sender) {
+
+        for (uint i = 0; i < _initialRequests.length; i++) {
+            endorsements[_initialRequests[i]] = State.REQUESTED;
+        }
+    }
 
     /**
      * @notice Contract is endorsed by the caller. This only possible if the contract owner has requested an endorsement.
