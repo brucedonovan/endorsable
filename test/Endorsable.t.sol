@@ -47,13 +47,13 @@ contract EndorsableTest is Test {
      */
     function testConstructorSetsInitialRequests() public {
         assertEq(
-            uint(endorsable.getEndorsementStatus(initRequest)),
-            uint(Endorsable.State.REQUESTED),
+            uint256(endorsable.getEndorsementStatus(initRequest)),
+            uint256(Endorsable.State.REQUESTED),
             "initRequest should be in REQUESTED state"
         );
         assertEq(
-            uint(endorsable.getEndorsementStatus(initRequest2)),
-            uint(Endorsable.State.REQUESTED),
+            uint256(endorsable.getEndorsementStatus(initRequest2)),
+            uint256(Endorsable.State.REQUESTED),
             "initRequert2 should be in REQUESTED state"
         );
     }
@@ -87,11 +87,7 @@ contract EndorsableTest is Test {
 
         // Confirm the state is REQUESTED
         Endorsable.State status = endorsable.getEndorsementStatus(testUser);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REQUESTED),
-            "Expected state: REQUESTED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REQUESTED), "Expected state: REQUESTED");
     }
 
     /**
@@ -142,11 +138,7 @@ contract EndorsableTest is Test {
 
         // Confirm the state is ENDORSED
         Endorsable.State status = endorsable.getEndorsementStatus(testUser);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.ENDORSED),
-            "Expected state: ENDORSED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.ENDORSED), "Expected state: ENDORSED");
     }
 
     /**
@@ -179,11 +171,7 @@ contract EndorsableTest is Test {
 
         // Confirm the state is REVOKED
         Endorsable.State status = endorsable.getEndorsementStatus(testUser);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REVOKED),
-            "Expected state: REVOKED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REVOKED), "Expected state: REVOKED");
     }
 
     /**
@@ -233,11 +221,7 @@ contract EndorsableTest is Test {
 
         // Confirm the state
         Endorsable.State status = endorsable.getEndorsementStatus(testUser);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REMOVED),
-            "Expected state: REMOVED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Expected state: REMOVED");
     }
 
     /**
@@ -256,11 +240,7 @@ contract EndorsableTest is Test {
 
         // Confirm the state
         Endorsable.State status = endorsable.getEndorsementStatus(testUser);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REMOVED),
-            "Expected state: REMOVED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Expected state: REMOVED");
     }
 
     /**
@@ -281,10 +261,7 @@ contract EndorsableTest is Test {
      * @notice Fuzz test for requesting endorsements with arbitrary addresses.
      * @dev We skip address(0) or contract addresses if desired, but here we keep it simple.
      */
-    function testFuzz_RequestEndorsement(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_RequestEndorsement(address randomAddr, string memory comment) public {
         // Only the owner can request
         vm.prank(owner);
 
@@ -296,20 +273,13 @@ contract EndorsableTest is Test {
 
         // Check state
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REQUESTED),
-            "Should be REQUESTED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REQUESTED), "Should be REQUESTED");
     }
 
     /**
      * @notice Fuzz test that once requested, random address can successfully call `endorse()`.
      */
-    function testFuzz_EndorseAfterRequest(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_EndorseAfterRequest(address randomAddr, string memory comment) public {
         // Only allow fuzzed addresses that aren't the zero address to reduce meaningless calls
         vm.assume(randomAddr != address(0));
 
@@ -323,20 +293,13 @@ contract EndorsableTest is Test {
 
         // Check final state
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.ENDORSED),
-            "Should be ENDORSED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.ENDORSED), "Should be ENDORSED");
     }
 
     /**
      * @notice Fuzz test for revoking endorsement from random addresses (only valid if state is ENDORSED).
      */
-    function testFuzz_RevokeEndorsement(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_RevokeEndorsement(address randomAddr, string memory comment) public {
         vm.assume(randomAddr != address(0));
 
         // 1) Request
@@ -353,20 +316,13 @@ contract EndorsableTest is Test {
 
         // Check final state
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REVOKED),
-            "Should be REVOKED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REVOKED), "Should be REVOKED");
     }
 
     /**
      * @notice Fuzz test for removing endorsements from random addresses (only owner can remove).
      */
-    function testFuzz_RemoveEndorsement(
-        address randomAddr,
-        string memory comment
-    ) public {
+    function testFuzz_RemoveEndorsement(address randomAddr, string memory comment) public {
         vm.assume(randomAddr != address(0));
 
         // 1) Request
@@ -383,10 +339,6 @@ contract EndorsableTest is Test {
 
         // Check final state
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
-        assertEq(
-            uint8(status),
-            uint8(Endorsable.State.REMOVED),
-            "Should be REMOVED"
-        );
+        assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Should be REMOVED");
     }
 }
