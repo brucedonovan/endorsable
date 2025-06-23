@@ -1,5 +1,7 @@
 # Endorsable 
 
+A tiny utility contract - smallest unit of code that can offer real-world utility.
+
 ## Overview
 
 `Endorsable` provides an inheritable, structured mechanism for managing and tracking endorsements of a contract on-chain.  
