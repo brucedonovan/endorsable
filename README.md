@@ -1,6 +1,6 @@
 # Endorsable 
 
-A tiny utility contract - smallest unit of contract code that can offer real-world utility.
+A 'micro-contract' experiment - the smallest utility contract that can offer real-world benefits.
 
 ## Overview
 
