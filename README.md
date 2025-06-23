@@ -1,6 +1,6 @@
 # Endorsable 
 
-A tiny utility contract - smallest unit of code that can offer real-world utility.
+A tiny utility contract - smallest unit of contract code that can offer real-world utility.
 
 ## Overview
 
