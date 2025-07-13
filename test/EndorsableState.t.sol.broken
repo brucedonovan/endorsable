@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import "lib/forge-std/src/Test.sol";
-import "../examples/ScoreEndorsementState.sol";
+import "../src/EndorsableState.sol";
 
 /**
- * @title ScoreEndorsementStateTest
+ * @title EndorsableStateTest
  * @dev Test the simplified state-based endorsement system
  */
-contract ScoreEndorsementStateTest is Test {
-    ScoreEndorsementState scoreContract;
+contract EndorsableStateTest is Test {
+    EndorsableState scoreContract;
     
     address owner = address(0x1);
     address alice = address(0x2);
@@ -20,7 +20,7 @@ contract ScoreEndorsementStateTest is Test {
     
     function setUp() public {
         vm.prank(owner);
-        scoreContract = new ScoreEndorsementState(initialEndorsers);
+        scoreContract = new EndorsableState(initialEndorsers);
     }
     
     function testSubmitScore() public {

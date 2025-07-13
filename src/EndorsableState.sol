@@ -79,7 +79,7 @@ contract EndorsableState is Endorsable {
         bytes32 stateId = getStateId(stateOwner, identifier);
         require(stateEndorsements[stateId][msg.sender] == State.ENDORSED, "Not endorsed");
 
-        stateEndorsements[stateId][msg.sender] = State.UNASSIGNED;
+        stateEndorsements[stateId][msg.sender] = State.REVOKED;
         emit StateEndorsementRevoked(stateId, msg.sender, comment);
     }
 

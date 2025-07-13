@@ -102,6 +102,37 @@ cd Endorsable
 forge install
 ```
 
+## 📚 Examples
+
+The `examples/` directory contains comprehensive, production-ready examples demonstrating how to use both `Endorsable` and `EndorsableState` contracts:
+
+### 🏢 ReputableBusiness (Endorsable)
+A business reputation management system showcasing contract-level endorsements with:
+- Business metrics tracking
+- Reputation scoring (0-100)
+- Trustworthiness evaluation
+- Partner/auditor endorsements
+
+### 🎯 ProjectPortfolio (EndorsableState)  
+A project portfolio system demonstrating state-specific endorsements with:
+- Individual project endorsements
+- Project lifecycle management
+- Batch endorsement operations
+- Quality assessment and reputation scoring
+
+### Running Example Tests
+
+```sh
+# Run all example tests
+cd examples && forge test
+
+# Run specific example
+cd examples && forge test --match-contract ReputableBusinessTest
+cd examples && forge test --match-contract ProjectPortfolioTest
+```
+
+See the [Examples README](./examples/README.md) for detailed usage guides, integration examples, and best practices.
+
 ## Running Tests
 
 To test the contract, run:
