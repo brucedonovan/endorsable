@@ -142,7 +142,14 @@ contract ProjectPortfolio is EndorsableState {
         require(bytes(projects[projectId].name).length > 0, "Project does not exist");
         
         Project memory project = projects[projectId];
-        uint256 endorsementCount = getStateEndorsementCount(owner, projectId, potentialEndorsers);
+        
+        // Count endorsements manually since getStateEndorsementCount was removed
+        uint256 endorsementCount = 0;
+        for (uint256 i = 0; i < potentialEndorsers.length; i++) {
+            if (getStateEndorsementStatus(owner, projectId, potentialEndorsers[i]) == 2) { // ENDORSED
+                endorsementCount++;
+            }
+        }
         
         // Base score from endorsements (max 60 points)
         score = endorsementCount * 15;
@@ -174,7 +181,14 @@ contract ProjectPortfolio is EndorsableState {
         require(bytes(projects[projectId].name).length > 0, "Project does not exist");
         
         Project memory project = projects[projectId];
-        uint256 endorsementCount = getStateEndorsementCount(owner, projectId, potentialEndorsers);
+        
+        // Count endorsements manually since getStateEndorsementCount was removed
+        uint256 endorsementCount = 0;
+        for (uint256 i = 0; i < potentialEndorsers.length; i++) {
+            if (getStateEndorsementStatus(owner, projectId, potentialEndorsers[i]) == 2) { // ENDORSED
+                endorsementCount++;
+            }
+        }
         
         return endorsementCount >= 2 && 
                project.isCompleted && 
@@ -217,12 +231,12 @@ contract ProjectPortfolio is EndorsableState {
     ) {
         require(bytes(projects[projectId].name).length > 0, "Project does not exist");
         
-        uint8[] memory statuses = this.batchGetStateEndorsementStatus(owner, projectId, addresses);
-        
-        for (uint256 i = 0; i < statuses.length; i++) {
-            if (statuses[i] == 2) endorsedCount++; // ENDORSED
-            else if (statuses[i] == 1) requestedCount++; // REQUESTED
-            else if (statuses[i] == 3) revokedCount++; // REVOKED
+        // Check statuses manually since batchGetStateEndorsementStatus was removed
+        for (uint256 i = 0; i < addresses.length; i++) {
+            uint8 status = getStateEndorsementStatus(owner, projectId, addresses[i]);
+            if (status == 2) endorsedCount++; // ENDORSED
+            else if (status == 1) requestedCount++; // REQUESTED
+            else if (status == 3) revokedCount++; // REVOKED
         }
     }
 }

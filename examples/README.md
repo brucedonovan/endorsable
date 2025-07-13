@@ -160,7 +160,7 @@ bool isHighQuality = portfolio.isHighQualityProject(
 - `revokeStateEndorsement(owner, identifier, comment)`: Revoke project endorsement
 - `requestStateEndorsement(identifier, addr, comment)`: Request project endorsement
 - `getStateEndorsementStatus(owner, identifier, addr)`: Check project endorsement status
-- `getStateEndorsementCount(owner, identifier, addresses)`: Count project endorsements
+
 ## 🧪 Testing
 
 Both examples come with comprehensive test suites that demonstrate:

@@ -140,39 +140,4 @@ contract EndorsableState is Endorsable {
     // ================================
     // UTILITY FUNCTIONS
     // ================================
-
-    /**
-     * @notice Get the number of endorsements for a specific state
-     * @param owner The address that owns the state
-     * @param identifier The string identifier for the state
-     * @param addresses The list of addresses to check for endorsements
-     * @return count The number of addresses that have endorsed this state
-     */
-    function getStateEndorsementCount(address owner, string memory identifier, address[] calldata addresses) public view returns (uint256 count) {
-        bytes32 stateId = getStateId(owner, identifier);
-        for (uint256 i = 0; i < addresses.length; i++) {
-            if (stateEndorsements[stateId][addresses[i]] == State.ENDORSED) {
-                count++;
-            }
-        }
-    }
-
-    /**
-     * @notice Batch check endorsement statuses for multiple addresses on a specific state
-     * @param owner The address that owns the state
-     * @param identifier The string identifier for the state
-     * @param addresses The list of addresses to check
-     * @return statuses Array of endorsement statuses corresponding to the input addresses
-     */
-    function batchGetStateEndorsementStatus(address owner, string calldata identifier, address[] calldata addresses) 
-        external 
-        view 
-        returns (uint8[] memory statuses) 
-    {
-        bytes32 stateId = getStateId(owner, identifier);
-        statuses = new uint8[](addresses.length);
-        for (uint256 i = 0; i < addresses.length; i++) {
-            statuses[i] = uint8(stateEndorsements[stateId][addresses[i]]);
-        }
-    }
 }

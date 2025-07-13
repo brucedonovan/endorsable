@@ -80,14 +80,6 @@ contract EndorsableStateTest is Test {
         // Check both endorsements
         assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 2, "Bob should have endorsed");
         assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", charlie), 2, "Charlie should have endorsed");
-        
-        // Test endorsement counting
-        address[] memory endorsers = new address[](2);
-        endorsers[0] = bob;
-        endorsers[1] = charlie;
-        
-        uint256 count = endorsableContract.getStateEndorsementCount(alice, "profile", endorsers);
-        assertEq(count, 2, "Should have 2 endorsements");
     }
     
     function testIndependentStates() public {
@@ -123,27 +115,5 @@ contract EndorsableStateTest is Test {
         vm.prank(bob);
         vm.expectRevert("Not endorsed");
         endorsableContract.revokeStateEndorsement(alice, "profile", "Cannot revoke");
-    }
-    
-    function testBatchGetStateEndorsementStatus() public {
-        // Alice requests endorsements from Bob and Charlie
-        vm.prank(alice);
-        endorsableContract.requestStateEndorsement("profile", bob, "Please endorse from Bob");
-        
-        vm.prank(alice);
-        endorsableContract.requestStateEndorsement("profile", charlie, "Please endorse from Charlie");
-        
-        // Bob endorses
-        vm.prank(bob);
-        endorsableContract.endorseState(alice, "profile", "Bob endorses");
-        
-        // Check batch status
-        address[] memory addresses = new address[](2);
-        addresses[0] = bob;
-        addresses[1] = charlie;
-        
-        uint8[] memory statuses = endorsableContract.batchGetStateEndorsementStatus(alice, "profile", addresses);
-        assertEq(statuses[0], 2, "Bob should be endorsed");
-        assertEq(statuses[1], 1, "Charlie should be requested");
     }
 }

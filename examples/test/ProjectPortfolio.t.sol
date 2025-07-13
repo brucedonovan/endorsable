@@ -135,15 +135,10 @@ contract ProjectPortfolioTest is Test {
         vm.prank(expert1);
         portfolio.endorseState(owner, "batch-test", "Solid work");
         
-        // Check batch status
-        uint8[] memory statuses = portfolio.batchGetStateEndorsementStatus(owner, "batch-test", endorsers);
-        assertEq(statuses[0], 2); // client1 - ENDORSED
-        assertEq(statuses[1], 1); // reviewer1 - REQUESTED
-        assertEq(statuses[2], 2); // expert1 - ENDORSED
-        
-        // Check endorsement count
-        uint256 count = portfolio.getStateEndorsementCount(owner, "batch-test", endorsers);
-        assertEq(count, 2);
+        // Check individual statuses since we removed batch function
+        assertEq(portfolio.getStateEndorsementStatus(owner, "batch-test", client1), 2); // ENDORSED
+        assertEq(portfolio.getStateEndorsementStatus(owner, "batch-test", reviewer1), 1); // REQUESTED  
+        assertEq(portfolio.getStateEndorsementStatus(owner, "batch-test", expert1), 2); // ENDORSED
         
         // Check endorsement summary
         (uint256 endorsed, uint256 requested, uint256 revoked) = 
