@@ -6,7 +6,7 @@ interface IEndorsable {
      * @dev Enum representing the possible endorsement states for an address:
      * 0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED
      */
-    enum endorseState {
+    enum State {
         UNASSIGNED,
         REQUESTED,
         ENDORSED,

@@ -262,11 +262,13 @@ contract EndorsableTest is Test {
      * @dev We skip address(0) or contract addresses if desired, but here we keep it simple.
      */
     function testFuzz_RequestEndorsement(address randomAddr, string memory comment) public {
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
+        vm.assume(randomAddr != address(0));
+        
         // Only the owner can request
         vm.prank(owner);
 
-        // If the random address is already testUser or testUser2 with a prior state, skip
-        // Or we can just safely catch any revert to demonstrate fuzzing approach.
         vm.expectEmit(true, false, false, true);
         emit EndorsementRequested(randomAddr, comment);
         endorsable.requestEndorsement(randomAddr, comment);
@@ -280,7 +282,8 @@ contract EndorsableTest is Test {
      * @notice Fuzz test that once requested, random address can successfully call `endorse()`.
      */
     function testFuzz_EndorseAfterRequest(address randomAddr, string memory comment) public {
-        // Only allow fuzzed addresses that aren't the zero address to reduce meaningless calls
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
         vm.assume(randomAddr != address(0));
 
         // 1) Owner requests endorsement for randomAddr
@@ -300,6 +303,8 @@ contract EndorsableTest is Test {
      * @notice Fuzz test for revoking endorsement from random addresses (only valid if state is ENDORSED).
      */
     function testFuzz_RevokeEndorsement(address randomAddr, string memory comment) public {
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
         vm.assume(randomAddr != address(0));
 
         // 1) Request
@@ -323,6 +328,8 @@ contract EndorsableTest is Test {
      * @notice Fuzz test for removing endorsements from random addresses (only owner can remove).
      */
     function testFuzz_RemoveEndorsement(address randomAddr, string memory comment) public {
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
         vm.assume(randomAddr != address(0));
 
         // 1) Request
