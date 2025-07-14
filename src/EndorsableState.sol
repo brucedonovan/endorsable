@@ -137,7 +137,4 @@ contract EndorsableState is Endorsable {
         return keccak256(abi.encodePacked(owner, identifier));
     }
 
-    // ================================
-    // UTILITY FUNCTIONS
-    // ================================
 }
