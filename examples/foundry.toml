@@ -1,0 +1,13 @@
+[profile.default]
+src = "."
+test = "test"
+out = "out"
+libs = ["../lib"]
+allow_paths = ["../src"]
+remappings = [
+    "@openzeppelin/contracts/=../lib/openzeppelin-contracts/contracts/",
+    "forge-std/=../lib/forge-std/src/",
+    "src/=../src/"
+]
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config

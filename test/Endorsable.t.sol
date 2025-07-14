@@ -254,53 +254,70 @@ contract EndorsableTest is Test {
     }
 
     // -----------------------------------------------
-    // Fuzz Tests
+    // Enhanced Fuzz Tests
     // -----------------------------------------------
 
     /**
-     * @notice Fuzz test for requesting endorsements with arbitrary addresses.
-     * @dev We skip address(0) or contract addresses if desired, but here we keep it simple.
+     * @notice Enhanced fuzz test for requesting endorsements with edge cases.
      */
     function testFuzz_RequestEndorsement(address randomAddr, string memory comment) public {
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
+        // Allow address(0) to test edge case
+
         // Only the owner can request
         vm.prank(owner);
 
-        // If the random address is already testUser or testUser2 with a prior state, skip
-        // Or we can just safely catch any revert to demonstrate fuzzing approach.
         vm.expectEmit(true, false, false, true);
         emit EndorsementRequested(randomAddr, comment);
         endorsable.requestEndorsement(randomAddr, comment);
 
-        // Check state
+        // Check state and invariants
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
         assertEq(uint8(status), uint8(Endorsable.State.REQUESTED), "Should be REQUESTED");
+
+        // Invariant: Cannot request again
+        vm.prank(owner);
+        vm.expectRevert("Already requested.");
+        endorsable.requestEndorsement(randomAddr, "Should fail");
     }
 
     /**
-     * @notice Fuzz test that once requested, random address can successfully call `endorse()`.
+     * @notice Enhanced fuzz test for endorsing with state validation.
      */
     function testFuzz_EndorseAfterRequest(address randomAddr, string memory comment) public {
-        // Only allow fuzzed addresses that aren't the zero address to reduce meaningless calls
-        vm.assume(randomAddr != address(0));
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
 
         // 1) Owner requests endorsement for randomAddr
         vm.prank(owner);
-        endorsable.requestEndorsement(randomAddr, comment);
+        endorsable.requestEndorsement(randomAddr, "Fuzz request");
 
         // 2) randomAddr endorses
         vm.prank(randomAddr);
         endorsable.endorse(comment);
 
-        // Check final state
+        // Check final state and invariants
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
         assertEq(uint8(status), uint8(Endorsable.State.ENDORSED), "Should be ENDORSED");
+
+        // Invariant: Cannot endorse again
+        vm.prank(randomAddr);
+        vm.expectRevert("Endorsement not requested.");
+        endorsable.endorse("Should fail");
+
+        // Invariant: Owner cannot request again while endorsed
+        vm.prank(owner);
+        vm.expectRevert("Already endorsed.");
+        endorsable.requestEndorsement(randomAddr, "Should fail");
     }
 
     /**
-     * @notice Fuzz test for revoking endorsement from random addresses (only valid if state is ENDORSED).
+     * @notice Enhanced fuzz test for revoking with comprehensive validation.
      */
     function testFuzz_RevokeEndorsement(address randomAddr, string memory comment) public {
-        vm.assume(randomAddr != address(0));
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
 
         // 1) Request
         vm.prank(owner);
@@ -314,31 +331,638 @@ contract EndorsableTest is Test {
         vm.prank(randomAddr);
         endorsable.revokeEndorsement(comment);
 
-        // Check final state
+        // Check final state and invariants
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
         assertEq(uint8(status), uint8(Endorsable.State.REVOKED), "Should be REVOKED");
+
+        // Invariant: Cannot revoke again
+        vm.prank(randomAddr);
+        vm.expectRevert("Not endorsed, already revoked, or removed.");
+        endorsable.revokeEndorsement("Should fail");
+
+        // Invariant: Cannot endorse after revoke
+        vm.prank(randomAddr);
+        vm.expectRevert("Endorsement not requested.");
+        endorsable.endorse("Should fail");
+
+        // Invariant: Owner can request again after revoke
+        vm.prank(owner);
+        endorsable.requestEndorsement(randomAddr, "Should succeed after revoke");
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(randomAddr)),
+            uint8(Endorsable.State.REQUESTED),
+            "Should be REQUESTED again"
+        );
     }
 
     /**
-     * @notice Fuzz test for removing endorsements from random addresses (only owner can remove).
+     * @notice Enhanced fuzz test for removing with access control validation.
      */
     function testFuzz_RemoveEndorsement(address randomAddr, string memory comment) public {
-        vm.assume(randomAddr != address(0));
+        // Skip addresses that are pre-initialized in the constructor
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
 
         // 1) Request
         vm.prank(owner);
         endorsable.requestEndorsement(randomAddr, "Requesting for test...");
 
-        // 2) Endorse or skip to directly removing. Let's do the full cycle:
+        // 2) Endorse
         vm.prank(randomAddr);
         endorsable.endorse("Endorsing in fuzz test...");
 
-        // 3) Remove
+        // 3) Verify non-owner cannot remove
+        vm.prank(randomAddr);
+        vm.expectRevert();
+        endorsable.removeEndorsement(randomAddr, "Should fail - not owner");
+
+        // 4) Owner removes
         vm.prank(owner);
         endorsable.removeEndorsement(randomAddr, comment);
 
-        // Check final state
+        // Check final state and invariants
         Endorsable.State status = endorsable.getEndorsementStatus(randomAddr);
         assertEq(uint8(status), uint8(Endorsable.State.REMOVED), "Should be REMOVED");
+
+        // Invariant: Cannot remove again
+        vm.prank(owner);
+        vm.expectRevert("Not endorsed or requested.");
+        endorsable.removeEndorsement(randomAddr, "Should fail");
+
+        // Invariant: Cannot endorse after removal
+        vm.prank(randomAddr);
+        vm.expectRevert("Endorsement not requested.");
+        endorsable.endorse("Should fail");
+
+        // Invariant: Owner can request again after removal
+        vm.prank(owner);
+        endorsable.requestEndorsement(randomAddr, "Should succeed after removal");
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(randomAddr)),
+            uint8(Endorsable.State.REQUESTED),
+            "Should be REQUESTED again"
+        );
+    }
+
+    /**
+     * @notice Fuzz test for state transitions with random sequences.
+     */
+    function testFuzz_StateTransitions(address randomAddr, uint8 sequence) public {
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
+        vm.assume(randomAddr != address(0));
+
+        // Use sequence to determine which operations to perform
+        // This creates different state transition paths
+        uint8 operation = sequence % 4;
+
+        // Always start with request
+        vm.prank(owner);
+        endorsable.requestEndorsement(randomAddr, "Initial request");
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(randomAddr)), uint8(Endorsable.State.REQUESTED), "Should be REQUESTED"
+        );
+
+        if (operation == 0) {
+            // Path: Request -> Remove
+            vm.prank(owner);
+            endorsable.removeEndorsement(randomAddr, "Remove from requested");
+            assertEq(
+                uint8(endorsable.getEndorsementStatus(randomAddr)), uint8(Endorsable.State.REMOVED), "Should be REMOVED"
+            );
+        } else if (operation == 1) {
+            // Path: Request -> Endorse -> Remove
+            vm.prank(randomAddr);
+            endorsable.endorse("Endorsing");
+            vm.prank(owner);
+            endorsable.removeEndorsement(randomAddr, "Remove from endorsed");
+            assertEq(
+                uint8(endorsable.getEndorsementStatus(randomAddr)), uint8(Endorsable.State.REMOVED), "Should be REMOVED"
+            );
+        } else if (operation == 2) {
+            // Path: Request -> Endorse -> Revoke
+            vm.prank(randomAddr);
+            endorsable.endorse("Endorsing");
+            vm.prank(randomAddr);
+            endorsable.revokeEndorsement("Revoking");
+            assertEq(
+                uint8(endorsable.getEndorsementStatus(randomAddr)), uint8(Endorsable.State.REVOKED), "Should be REVOKED"
+            );
+        } else {
+            // Path: Request -> Endorse -> Revoke -> Request again
+            vm.prank(randomAddr);
+            endorsable.endorse("Endorsing");
+            vm.prank(randomAddr);
+            endorsable.revokeEndorsement("Revoking");
+            vm.prank(owner);
+            endorsable.requestEndorsement(randomAddr, "Request after revoke");
+            assertEq(
+                uint8(endorsable.getEndorsementStatus(randomAddr)),
+                uint8(Endorsable.State.REQUESTED),
+                "Should be REQUESTED again"
+            );
+        }
+    }
+
+    /**
+     * @notice Fuzz test for multiple addresses with random operations.
+     */
+    function testFuzz_MultipleAddresses(address addr1, address addr2, address addr3, uint8 operations) public {
+        // Ensure unique addresses
+        vm.assume(addr1 != addr2 && addr2 != addr3 && addr1 != addr3);
+        vm.assume(addr1 != initRequest && addr1 != initRequest2);
+        vm.assume(addr2 != initRequest && addr2 != initRequest2);
+        vm.assume(addr3 != initRequest && addr3 != initRequest2);
+        vm.assume(addr1 != address(0) && addr2 != address(0) && addr3 != address(0));
+
+        address[3] memory addrs = [addr1, addr2, addr3];
+
+        // Request endorsements for all addresses
+        for (uint256 i = 0; i < 3; i++) {
+            vm.prank(owner);
+            endorsable.requestEndorsement(addrs[i], "Multi request");
+            assertEq(
+                uint8(endorsable.getEndorsementStatus(addrs[i])),
+                uint8(Endorsable.State.REQUESTED),
+                "Should be REQUESTED"
+            );
+        }
+
+        // Perform different operations based on the operations parameter
+        for (uint256 i = 0; i < 3; i++) {
+            uint8 op = uint8((operations >> (i * 2)) & 3); // Extract 2 bits for each operation
+
+            if (op == 0) {
+                // Endorse
+                vm.prank(addrs[i]);
+                endorsable.endorse("Multi endorse");
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addrs[i])),
+                    uint8(Endorsable.State.ENDORSED),
+                    "Should be ENDORSED"
+                );
+            } else if (op == 1) {
+                // Remove while requested
+                vm.prank(owner);
+                endorsable.removeEndorsement(addrs[i], "Multi remove");
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addrs[i])),
+                    uint8(Endorsable.State.REMOVED),
+                    "Should be REMOVED"
+                );
+            } else if (op == 2) {
+                // Endorse then revoke
+                vm.prank(addrs[i]);
+                endorsable.endorse("Multi endorse");
+                vm.prank(addrs[i]);
+                endorsable.revokeEndorsement("Multi revoke");
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addrs[i])),
+                    uint8(Endorsable.State.REVOKED),
+                    "Should be REVOKED"
+                );
+            }
+            // op == 3: Leave as REQUESTED
+        }
+
+        // Verify states are independent - no address should affect another
+        for (uint256 i = 0; i < 3; i++) {
+            Endorsable.State state = endorsable.getEndorsementStatus(addrs[i]);
+            assertTrue(uint8(state) <= 4, "State should be valid");
+        }
+    }
+
+    /**
+     * @notice Fuzz test for comment strings with edge cases.
+     */
+    function testFuzz_CommentEdgeCases(address randomAddr, string memory comment) public {
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
+        vm.assume(randomAddr != address(0));
+
+        // Test with potentially problematic comment strings
+        vm.prank(owner);
+        endorsable.requestEndorsement(randomAddr, comment);
+
+        vm.prank(randomAddr);
+        endorsable.endorse(comment);
+
+        vm.prank(randomAddr);
+        endorsable.revokeEndorsement(comment);
+
+        // Request again to test remove
+        vm.prank(owner);
+        endorsable.requestEndorsement(randomAddr, comment);
+
+        vm.prank(owner);
+        endorsable.removeEndorsement(randomAddr, comment);
+
+        // Final state should be REMOVED regardless of comment content
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(randomAddr)), uint8(Endorsable.State.REMOVED), "Should be REMOVED"
+        );
+    }
+
+    /**
+     * @notice Fuzz test for access control violations.
+     */
+    function testFuzz_AccessControl(address randomAddr, address nonOwner) public {
+        vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
+        vm.assume(randomAddr != address(0));
+        vm.assume(nonOwner != owner);
+        vm.assume(nonOwner != address(0));
+
+        // Non-owner cannot request
+        vm.prank(nonOwner);
+        vm.expectRevert();
+        endorsable.requestEndorsement(randomAddr, "Should fail");
+
+        // Owner requests
+        vm.prank(owner);
+        endorsable.requestEndorsement(randomAddr, "Valid request");
+
+        // randomAddr endorses
+        vm.prank(randomAddr);
+        endorsable.endorse("Valid endorse");
+
+        // Non-owner cannot remove
+        vm.prank(nonOwner);
+        vm.expectRevert();
+        endorsable.removeEndorsement(randomAddr, "Should fail");
+
+        // But the endorsed address can revoke their own endorsement
+        vm.prank(randomAddr);
+        endorsable.revokeEndorsement("Valid revoke");
+
+        // Verify final state
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(randomAddr)), uint8(Endorsable.State.REVOKED), "Should be REVOKED"
+        );
+    }
+
+    /**
+     * @notice Invariant fuzz test - contract should maintain consistent state.
+     */
+    function testFuzz_Invariants(address[] memory addresses, uint256 seed) public {
+        // Limit array size to prevent excessive gas usage
+        vm.assume(addresses.length <= 10);
+        vm.assume(addresses.length > 0);
+
+        for (uint256 i = 0; i < addresses.length; i++) {
+            vm.assume(addresses[i] != initRequest && addresses[i] != initRequest2);
+            vm.assume(addresses[i] != address(0));
+
+            // Ensure no duplicates in the array
+            for (uint256 j = i + 1; j < addresses.length; j++) {
+                vm.assume(addresses[i] != addresses[j]);
+            }
+        }
+
+        // Perform random operations on each address
+        for (uint256 i = 0; i < addresses.length; i++) {
+            uint256 operation = uint256(keccak256(abi.encode(seed, i))) % 4;
+
+            if (operation == 0) {
+                // Just request
+                vm.prank(owner);
+                endorsable.requestEndorsement(addresses[i], "Invariant test");
+
+                // Invariant: State should be REQUESTED
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addresses[i])),
+                    uint8(Endorsable.State.REQUESTED),
+                    "Should be REQUESTED"
+                );
+            } else if (operation == 1) {
+                // Request and endorse
+                vm.prank(owner);
+                endorsable.requestEndorsement(addresses[i], "Invariant test");
+                vm.prank(addresses[i]);
+                endorsable.endorse("Invariant endorse");
+
+                // Invariant: State should be ENDORSED
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addresses[i])),
+                    uint8(Endorsable.State.ENDORSED),
+                    "Should be ENDORSED"
+                );
+            } else if (operation == 2) {
+                // Full cycle: request -> endorse -> revoke
+                vm.prank(owner);
+                endorsable.requestEndorsement(addresses[i], "Invariant test");
+                vm.prank(addresses[i]);
+                endorsable.endorse("Invariant endorse");
+                vm.prank(addresses[i]);
+                endorsable.revokeEndorsement("Invariant revoke");
+
+                // Invariant: State should be REVOKED
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addresses[i])),
+                    uint8(Endorsable.State.REVOKED),
+                    "Should be REVOKED"
+                );
+            } else {
+                // Request and remove
+                vm.prank(owner);
+                endorsable.requestEndorsement(addresses[i], "Invariant test");
+                vm.prank(owner);
+                endorsable.removeEndorsement(addresses[i], "Invariant remove");
+
+                // Invariant: State should be REMOVED
+                assertEq(
+                    uint8(endorsable.getEndorsementStatus(addresses[i])),
+                    uint8(Endorsable.State.REMOVED),
+                    "Should be REMOVED"
+                );
+            }
+        }
+
+        // Global invariant: initRequest and initRequest2 should still be REQUESTED
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(initRequest)),
+            uint8(Endorsable.State.REQUESTED),
+            "initRequest should remain REQUESTED"
+        );
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(initRequest2)),
+            uint8(Endorsable.State.REQUESTED),
+            "initRequest2 should remain REQUESTED"
+        );
+    }
+
+    // ================================
+    // ADDITIONAL EDGE CASE TESTS
+    // ================================
+
+    /**
+     * @notice Test requesting endorsement after a previous REMOVED state.
+     */
+    function testRequestEndorsementAfterRemoved() public {
+        // Complete flow: request -> endorse -> remove -> request again
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Initial request");
+
+        vm.prank(testUser);
+        endorsable.endorse("Endorsing");
+
+        vm.prank(owner);
+        endorsable.removeEndorsement(testUser, "Removing");
+
+        // Verify state is REMOVED
+        assertEq(uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REMOVED), "Should be REMOVED");
+
+        // Now request again - should be allowed (resets to REQUESTED)
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Request after removal");
+
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.REQUESTED),
+            "Should be REQUESTED again"
+        );
+    }
+
+    /**
+     * @notice Test requesting endorsement after a previous REVOKED state.
+     */
+    function testRequestEndorsementAfterRevoked() public {
+        // Complete flow: request -> endorse -> revoke -> request again
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Initial request");
+
+        vm.prank(testUser);
+        endorsable.endorse("Endorsing");
+
+        vm.prank(testUser);
+        endorsable.revokeEndorsement("Revoking");
+
+        // Verify state is REVOKED
+        assertEq(uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REVOKED), "Should be REVOKED");
+
+        // Now request again - should be allowed (resets to REQUESTED)
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Request after revocation");
+
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.REQUESTED),
+            "Should be REQUESTED again"
+        );
+    }
+
+    /**
+     * @notice Test that removing endorsement fails for REVOKED state.
+     */
+    function testRemoveEndorsementFailsForRevoked() public {
+        // Complete flow: request -> endorse -> revoke
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Initial request");
+
+        vm.prank(testUser);
+        endorsable.endorse("Endorsing");
+
+        vm.prank(testUser);
+        endorsable.revokeEndorsement("Revoking");
+
+        // Try to remove a REVOKED endorsement - should fail
+        vm.prank(owner);
+        vm.expectRevert(bytes("Not endorsed or requested."));
+        endorsable.removeEndorsement(testUser, "Cannot remove revoked");
+    }
+
+    /**
+     * @notice Test that removing endorsement fails for REMOVED state.
+     */
+    function testRemoveEndorsementFailsForRemoved() public {
+        // Complete flow: request -> remove
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Initial request");
+
+        vm.prank(owner);
+        endorsable.removeEndorsement(testUser, "Removing");
+
+        // Try to remove again - should fail
+        vm.prank(owner);
+        vm.expectRevert(bytes("Not endorsed or requested."));
+        endorsable.removeEndorsement(testUser, "Cannot remove already removed");
+    }
+
+    /**
+     * @notice Test constructor with empty initial requests array.
+     */
+    function testConstructorWithEmptyArray() public {
+        address[] memory emptyArray = new address[](0);
+
+        vm.prank(owner);
+        Endorsable emptyEndorsable = new Endorsable(emptyArray);
+
+        // Verify that testUser has default UNASSIGNED state
+        assertEq(
+            uint8(emptyEndorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.UNASSIGNED),
+            "Should be UNASSIGNED"
+        );
+    }
+
+    /**
+     * @notice Test constructor with duplicate addresses in initial requests.
+     */
+    function testConstructorWithDuplicateAddresses() public {
+        address[] memory duplicateArray = new address[](3);
+        duplicateArray[0] = testUser;
+        duplicateArray[1] = testUser2;
+        duplicateArray[2] = testUser; // Duplicate
+
+        vm.prank(owner);
+        Endorsable duplicateEndorsable = new Endorsable(duplicateArray);
+
+        // Both addresses should be REQUESTED (duplicate should be overwritten)
+        assertEq(
+            uint8(duplicateEndorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.REQUESTED),
+            "testUser should be REQUESTED"
+        );
+        assertEq(
+            uint8(duplicateEndorsable.getEndorsementStatus(testUser2)),
+            uint8(Endorsable.State.REQUESTED),
+            "testUser2 should be REQUESTED"
+        );
+    }
+
+    /**
+     * @notice Test constructor with address(0) in initial requests.
+     */
+    function testConstructorWithAddressZero() public {
+        address[] memory zeroArray = new address[](2);
+        zeroArray[0] = address(0);
+        zeroArray[1] = testUser;
+
+        vm.prank(owner);
+        Endorsable zeroEndorsable = new Endorsable(zeroArray);
+
+        // Both addresses should be REQUESTED
+        assertEq(
+            uint8(zeroEndorsable.getEndorsementStatus(address(0))),
+            uint8(Endorsable.State.REQUESTED),
+            "address(0) should be REQUESTED"
+        );
+        assertEq(
+            uint8(zeroEndorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.REQUESTED),
+            "testUser should be REQUESTED"
+        );
+    }
+
+    /**
+     * @notice Test all functions with empty comment strings.
+     */
+    function testEmptyCommentStrings() public {
+        // Request with empty comment
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "");
+
+        // Endorse with empty comment
+        vm.prank(testUser);
+        endorsable.endorse("");
+
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.ENDORSED), "Should be ENDORSED"
+        );
+
+        // Revoke with empty comment
+        vm.prank(testUser);
+        endorsable.revokeEndorsement("");
+
+        assertEq(uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REVOKED), "Should be REVOKED");
+
+        // Request again to test remove with empty comment
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "");
+
+        // Remove with empty comment
+        vm.prank(owner);
+        endorsable.removeEndorsement(testUser, "");
+
+        assertEq(uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REMOVED), "Should be REMOVED");
+    }
+
+    /**
+     * @notice Test multiple simultaneous endorsements and operations.
+     */
+    function testMultipleSimultaneousOperations() public {
+        // Request endorsements for multiple users
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Request 1");
+
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser2, "Request 2");
+
+        // testUser endorses, testUser2 does not
+        vm.prank(testUser);
+        endorsable.endorse("Endorsing from testUser");
+
+        // Verify independent states
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.ENDORSED),
+            "testUser should be ENDORSED"
+        );
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser2)),
+            uint8(Endorsable.State.REQUESTED),
+            "testUser2 should be REQUESTED"
+        );
+
+        // Remove testUser2's request, revoke testUser's endorsement
+        vm.prank(owner);
+        endorsable.removeEndorsement(testUser2, "Removing testUser2");
+
+        vm.prank(testUser);
+        endorsable.revokeEndorsement("Revoking testUser");
+
+        // Verify final states
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)),
+            uint8(Endorsable.State.REVOKED),
+            "testUser should be REVOKED"
+        );
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser2)),
+            uint8(Endorsable.State.REMOVED),
+            "testUser2 should be REMOVED"
+        );
+    }
+
+    /**
+     * @notice Test that getEndorsementStatus works correctly for all states.
+     */
+    function testGetEndorsementStatusAllStates() public {
+        // Test UNASSIGNED (default)
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.UNASSIGNED), "Should be UNASSIGNED"
+        );
+
+        // Test REQUESTED
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Request");
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REQUESTED), "Should be REQUESTED"
+        );
+
+        // Test ENDORSED
+        vm.prank(testUser);
+        endorsable.endorse("Endorse");
+        assertEq(
+            uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.ENDORSED), "Should be ENDORSED"
+        );
+
+        // Test REVOKED
+        vm.prank(testUser);
+        endorsable.revokeEndorsement("Revoke");
+        assertEq(uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REVOKED), "Should be REVOKED");
+
+        // Test REMOVED (need to request again first)
+        vm.prank(owner);
+        endorsable.requestEndorsement(testUser, "Request again");
+        vm.prank(owner);
+        endorsable.removeEndorsement(testUser, "Remove");
+        assertEq(uint8(endorsable.getEndorsementStatus(testUser)), uint8(Endorsable.State.REMOVED), "Should be REMOVED");
     }
 }
