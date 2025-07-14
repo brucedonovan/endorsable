@@ -60,6 +60,8 @@ By extending these contracts, any smart contract can implement robust endorsemen
 - Improved error messaging for better debugging
 - Enhanced access control validationle 
 
+A 'micro-contract' experiment - the smallest utility contract that can offer real-world benefits.
+
 ## Overview
 
 `Endorsable` provides an inheritable, structured mechanism for managing and tracking endorsements of a contract on-chain.  
@@ -386,9 +388,3 @@ We welcome contributions! Please follow these guidelines:
 3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
 4. **Push** to the branch (`git push origin feature/amazing-feature`)
 5. **Open** a Pull Request
-
-### Development Guidelines
-- Follow Solidity style guide
-- Add comprehensive tests for new features
-- Update documentation for API changes
-- Ensure all tests pass before submitting
