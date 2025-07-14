@@ -22,6 +22,9 @@ interface IEndorsableState is IEndorsable {
     function removeStateEndorsement(string calldata identifier, address addr, string calldata comment) external;
 
     // View functions
-    function getStateEndorsementStatus(address owner, string calldata identifier, address addr) external view returns (uint8);
+    function getStateEndorsementStatus(address owner, string calldata identifier, address addr)
+        external
+        view
+        returns (uint8);
     function getStateId(address owner, string memory identifier) external pure returns (bytes32);
 }

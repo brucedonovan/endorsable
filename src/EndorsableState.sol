@@ -106,7 +106,7 @@ contract EndorsableState is Endorsable {
      */
     function removeStateEndorsement(string calldata identifier, address addr, string calldata comment) external {
         bytes32 stateId = getStateId(msg.sender, identifier);
-        
+
         stateEndorsements[stateId][addr] = State.UNASSIGNED;
         emit StateEndorsementRemoved(stateId, addr, comment);
     }
@@ -122,7 +122,11 @@ contract EndorsableState is Endorsable {
      * @param addr The address to check endorsement status for
      * @return The endorsement status (0=NONE, 1=WAITING, 2=ENDORSED, 3=REVOKED)
      */
-    function getStateEndorsementStatus(address owner, string memory identifier, address addr) public view returns (uint8) {
+    function getStateEndorsementStatus(address owner, string memory identifier, address addr)
+        public
+        view
+        returns (uint8)
+    {
         bytes32 stateId = getStateId(owner, identifier);
         return uint8(stateEndorsements[stateId][addr]);
     }
@@ -136,5 +140,4 @@ contract EndorsableState is Endorsable {
     function getStateId(address owner, string memory identifier) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(owner, identifier));
     }
-
 }
