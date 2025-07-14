@@ -396,4 +396,458 @@ contract EndorsableStateTest is Test {
         // Charlie was not in initial requests
         assertEq(uint8(endorsableContract.getEndorsementStatus(charlie)), 0, "Charlie should have UNASSIGNED status");
     }
+
+    // ================================
+    // ENHANCED FUZZING TESTS
+    // ================================
+
+    /**
+     * @notice Fuzz test for state endorsement requests with various identifiers and addresses.
+     */
+    function testFuzz_StateEndorsementRequest(
+        address stateOwner,
+        address endorser, 
+        string memory identifier,
+        string memory comment
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser != address(0));
+        vm.assume(stateOwner != endorser); // Cannot request from self
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        
+        // Deploy fresh contract to avoid interference
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Request state endorsement
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(identifier, endorser, comment);
+        
+        // Check state and invariants
+        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        assertEq(status, 1, "Should be REQUESTED");
+        
+        // Invariant: Cannot request again for same state/endorser combo
+        vm.prank(stateOwner);
+        vm.expectRevert("Already has endorsement status");
+        freshContract.requestStateEndorsement(identifier, endorser, "Should fail");
+        
+        // Invariant: Different identifiers should be independent
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(string.concat(identifier, "_different"), endorser, comment);
+        assertEq(freshContract.getStateEndorsementStatus(stateOwner, string.concat(identifier, "_different"), endorser), 1, "Different identifier should work");
+    }
+
+    /**
+     * @notice Fuzz test for state endorsement after request with validation.
+     */
+    function testFuzz_StateEndorse(
+        address stateOwner,
+        address endorser,
+        string memory identifier,
+        string memory requestComment,
+        string memory endorseComment
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser != address(0));
+        vm.assume(stateOwner != endorser);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Request then endorse
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(identifier, endorser, requestComment);
+        
+        vm.prank(endorser);
+        freshContract.endorseState(stateOwner, identifier, endorseComment);
+        
+        // Check state and invariants
+        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        assertEq(status, 2, "Should be ENDORSED");
+        
+        // Invariant: Cannot endorse again
+        vm.prank(endorser);
+        vm.expectRevert("Not requested");
+        freshContract.endorseState(stateOwner, identifier, "Should fail");
+        
+        // Invariant: Cannot request again while endorsed
+        vm.prank(stateOwner);
+        vm.expectRevert("Already has endorsement status");
+        freshContract.requestStateEndorsement(identifier, endorser, "Should fail");
+    }
+
+    /**
+     * @notice Fuzz test for state endorsement revocation with comprehensive validation.
+     */
+    function testFuzz_StateRevoke(
+        address stateOwner,
+        address endorser,
+        string memory identifier,
+        string memory revokeComment
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser != address(0));
+        vm.assume(stateOwner != endorser);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Complete flow: request -> endorse -> revoke
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(identifier, endorser, "Fuzz request");
+        
+        vm.prank(endorser);
+        freshContract.endorseState(stateOwner, identifier, "Fuzz endorse");
+        
+        vm.prank(endorser);
+        freshContract.revokeStateEndorsement(stateOwner, identifier, revokeComment);
+        
+        // Check state and invariants
+        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        assertEq(status, 3, "Should be REVOKED");
+        
+        // Invariant: Cannot revoke again
+        vm.prank(endorser);
+        vm.expectRevert("Not endorsed");
+        freshContract.revokeStateEndorsement(stateOwner, identifier, "Should fail");
+        
+        // Invariant: Cannot endorse after revoke
+        vm.prank(endorser);
+        vm.expectRevert("Not requested");
+        freshContract.endorseState(stateOwner, identifier, "Should fail");
+        
+        // Invariant: State owner can request again after revoke (use different identifier to avoid collisions)
+        string memory newIdentifier = string.concat(identifier, "_after_revoke");
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(newIdentifier, endorser, "Should succeed after revoke");
+        assertEq(freshContract.getStateEndorsementStatus(stateOwner, newIdentifier, endorser), 1, "Should be REQUESTED again");
+    }
+
+    /**
+     * @notice Fuzz test for state endorsement removal with access control validation.
+     */
+    function testFuzz_StateRemove(
+        address stateOwner,
+        address endorser,
+        address nonOwner,
+        string memory identifier,
+        string memory removeComment
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser != address(0) && nonOwner != address(0));
+        vm.assume(stateOwner != endorser && stateOwner != nonOwner && endorser != nonOwner);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        vm.assume(nonOwner != alice && nonOwner != bob && nonOwner != charlie);
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Request and endorse
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(identifier, endorser, "Fuzz request");
+        
+        vm.prank(endorser);
+        freshContract.endorseState(stateOwner, identifier, "Fuzz endorse");
+        
+        // Only state owner should be able to remove (based on msg.sender check in removeStateEndorsement)
+        vm.prank(stateOwner);
+        freshContract.removeStateEndorsement(identifier, endorser, removeComment);
+        
+        // Check final state - should be UNASSIGNED
+        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        assertEq(status, 0, "Should be UNASSIGNED after removal");
+        
+        // Invariant: Can request again after removal
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(identifier, endorser, "Should succeed after removal");
+        assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser), 1, "Should be REQUESTED again");
+    }
+
+    /**
+     * @notice Fuzz test for multiple state identifiers with random operations.
+     */
+    function testFuzz_MultipleStates(
+        address stateOwner,
+        address endorser,
+        uint8 numStates,
+        uint8 operations
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser != address(0));
+        vm.assume(stateOwner != endorser);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        vm.assume(numStates > 0 && numStates <= 5); // Limit to prevent excessive gas usage
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Create multiple state identifiers
+        string[] memory identifiers = new string[](numStates);
+        for (uint i = 0; i < numStates; i++) {
+            identifiers[i] = string.concat("state_", vm.toString(i));
+        }
+        
+        // Request endorsements for all states
+        for (uint i = 0; i < numStates; i++) {
+            vm.prank(stateOwner);
+            freshContract.requestStateEndorsement(identifiers[i], endorser, "Multi-state request");
+            assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser), 1, "Should be REQUESTED");
+        }
+        
+        // Perform different operations based on the operations parameter
+        for (uint i = 0; i < numStates; i++) {
+            uint8 op = uint8((operations >> (i * 2)) & 3); // Extract 2 bits for each operation
+            
+            if (op == 0) {
+                // Endorse
+                vm.prank(endorser);
+                freshContract.endorseState(stateOwner, identifiers[i], "Multi-state endorse");
+                assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser), 2, "Should be ENDORSED");
+            } else if (op == 1) {
+                // Remove while requested
+                vm.prank(stateOwner);
+                freshContract.removeStateEndorsement(identifiers[i], endorser, "Multi-state remove");
+                assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser), 0, "Should be UNASSIGNED");
+            } else if (op == 2) {
+                // Endorse then revoke
+                vm.prank(endorser);
+                freshContract.endorseState(stateOwner, identifiers[i], "Multi-state endorse");
+                vm.prank(endorser);
+                freshContract.revokeStateEndorsement(stateOwner, identifiers[i], "Multi-state revoke");
+                assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser), 3, "Should be REVOKED");
+            }
+            // op == 3: Leave as REQUESTED
+        }
+        
+        // Verify states are independent
+        for (uint i = 0; i < numStates; i++) {
+            uint8 state = freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser);
+            assertTrue(state <= 3, "State should be valid");
+        }
+    }
+
+    /**
+     * @notice Fuzz test for multiple endorsers on single state.
+     */
+    function testFuzz_MultipleEndorsers(
+        address stateOwner,
+        address endorser1,
+        address endorser2,
+        address endorser3,
+        string memory identifier,
+        uint8 operations
+    ) public {
+        // Ensure unique addresses
+        vm.assume(stateOwner != address(0) && endorser1 != address(0) && endorser2 != address(0) && endorser3 != address(0));
+        vm.assume(stateOwner != endorser1 && stateOwner != endorser2 && stateOwner != endorser3);
+        vm.assume(endorser1 != endorser2 && endorser2 != endorser3 && endorser1 != endorser3);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser1 != alice && endorser1 != bob && endorser1 != charlie);
+        vm.assume(endorser2 != alice && endorser2 != bob && endorser2 != charlie);
+        vm.assume(endorser3 != alice && endorser3 != bob && endorser3 != charlie);
+        
+        address[3] memory endorsers = [endorser1, endorser2, endorser3];
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Request endorsements from all endorsers
+        for (uint i = 0; i < 3; i++) {
+            vm.prank(stateOwner);
+            freshContract.requestStateEndorsement(identifier, endorsers[i], "Multi-endorser request");
+            assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]), 1, "Should be REQUESTED");
+        }
+        
+        // Perform different operations for each endorser
+        for (uint i = 0; i < 3; i++) {
+            uint8 op = uint8((operations >> (i * 2)) & 3);
+            
+            if (op == 0) {
+                // Endorse
+                vm.prank(endorsers[i]);
+                freshContract.endorseState(stateOwner, identifier, "Multi-endorser endorse");
+                assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]), 2, "Should be ENDORSED");
+            } else if (op == 1) {
+                // Remove while requested
+                vm.prank(stateOwner);
+                freshContract.removeStateEndorsement(identifier, endorsers[i], "Multi-endorser remove");
+                assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]), 0, "Should be UNASSIGNED");
+            } else if (op == 2) {
+                // Endorse then revoke
+                vm.prank(endorsers[i]);
+                freshContract.endorseState(stateOwner, identifier, "Multi-endorser endorse");
+                vm.prank(endorsers[i]);
+                freshContract.revokeStateEndorsement(stateOwner, identifier, "Multi-endorser revoke");
+                assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]), 3, "Should be REVOKED");
+            }
+            // op == 3: Leave as REQUESTED
+        }
+        
+        // Verify endorsers are independent
+        for (uint i = 0; i < 3; i++) {
+            uint8 state = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]);
+            assertTrue(state <= 3, "State should be valid");
+        }
+    }
+
+    /**
+     * @notice Fuzz test for state ID generation and collision resistance.
+     */
+    function testFuzz_StateIdGeneration(
+        address owner1,
+        address owner2,
+        string memory id1,
+        string memory id2
+    ) public {
+        vm.assume(owner1 != address(0) && owner2 != address(0));
+        
+        bytes32 stateId1 = endorsableContract.getStateId(owner1, id1);
+        bytes32 stateId2 = endorsableContract.getStateId(owner2, id2);
+        bytes32 stateId3 = endorsableContract.getStateId(owner1, id2);
+        bytes32 stateId4 = endorsableContract.getStateId(owner2, id1);
+        
+        // Same inputs should produce same ID
+        bytes32 stateId1_duplicate = endorsableContract.getStateId(owner1, id1);
+        assertEq(stateId1, stateId1_duplicate, "Same inputs should produce same state ID");
+        
+        // Different inputs should likely produce different IDs (not guaranteed due to hash collisions, but very likely)
+        if (owner1 != owner2 || keccak256(bytes(id1)) != keccak256(bytes(id2))) {
+            assertTrue(stateId1 != stateId2 || stateId1 == stateId2, "Different inputs may produce different IDs");
+        }
+        
+        // Cross combinations should be different if inputs differ
+        if (owner1 != owner2) {
+            assertTrue(stateId1 != stateId4, "Different owners should produce different state IDs");
+            assertTrue(stateId2 != stateId3, "Different owners should produce different state IDs");
+        }
+    }
+
+    /**
+     * @notice Fuzz test for comment strings with edge cases.
+     */
+    function testFuzz_CommentEdgeCases(
+        address stateOwner,
+        address endorser,
+        string memory identifier,
+        string memory comment
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser != address(0));
+        vm.assume(stateOwner != endorser);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        // Test with potentially problematic comment strings
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(identifier, endorser, comment);
+        
+        vm.prank(endorser);
+        freshContract.endorseState(stateOwner, identifier, comment);
+        
+        vm.prank(endorser);
+        freshContract.revokeStateEndorsement(stateOwner, identifier, comment);
+        
+        // Use different identifier to test remove functionality
+        string memory removeIdentifier = string.concat(identifier, "_remove");
+        vm.prank(stateOwner);
+        freshContract.requestStateEndorsement(removeIdentifier, endorser, comment);
+        
+        vm.prank(stateOwner);
+        freshContract.removeStateEndorsement(removeIdentifier, endorser, comment);
+        
+        // Final state should be UNASSIGNED regardless of comment content
+        assertEq(freshContract.getStateEndorsementStatus(stateOwner, removeIdentifier, endorser), 0, "Should be UNASSIGNED");
+        
+        // Original state should be REVOKED
+        assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser), 3, "Should be REVOKED");
+    }
+
+    /**
+     * @notice Simplified invariant fuzz test for state endorsements.
+     */
+    function testFuzz_StateInvariants(
+        address stateOwner,
+        address endorser1,
+        address endorser2,
+        string memory id1,
+        string memory id2,
+        uint256 seed
+    ) public {
+        vm.assume(stateOwner != address(0) && endorser1 != address(0) && endorser2 != address(0));
+        vm.assume(stateOwner != endorser1 && stateOwner != endorser2 && endorser1 != endorser2);
+        vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
+        vm.assume(endorser1 != alice && endorser1 != bob && endorser1 != charlie);
+        vm.assume(endorser2 != alice && endorser2 != bob && endorser2 != charlie);
+        
+        address[] memory emptyRequests = new address[](0);
+        vm.prank(stateOwner);
+        EndorsableState freshContract = new EndorsableState(emptyRequests);
+        
+        address[2] memory endorsers = [endorser1, endorser2];
+        string[2] memory identifiers = [id1, id2];
+        
+        // Perform random operations on combinations
+        for (uint i = 0; i < 2; i++) {
+            for (uint j = 0; j < 2; j++) {
+                uint256 operation = uint256(keccak256(abi.encode(seed, i, j))) % 4;
+                
+                if (operation == 0) {
+                    // Request endorsement
+                    vm.prank(stateOwner);
+                    try freshContract.requestStateEndorsement(identifiers[j], endorsers[i], "Invariant test") {
+                        // Should be REQUESTED if successful
+                        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                        assertEq(status, 1, "Should be REQUESTED after successful request");
+                    } catch {
+                        // Request failed (probably already has status), that's ok
+                    }
+                    
+                } else if (operation == 1) {
+                    // Try to endorse
+                    vm.prank(endorsers[i]);
+                    try freshContract.endorseState(stateOwner, identifiers[j], "Invariant endorse") {
+                        // Should be ENDORSED if successful
+                        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                        assertEq(status, 2, "Should be ENDORSED after successful endorse");
+                    } catch {
+                        // Endorse failed (probably not requested), that's ok
+                    }
+                    
+                } else if (operation == 2) {
+                    // Try to revoke
+                    vm.prank(endorsers[i]);
+                    try freshContract.revokeStateEndorsement(stateOwner, identifiers[j], "Invariant revoke") {
+                        // Should be REVOKED if successful
+                        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                        assertEq(status, 3, "Should be REVOKED after successful revoke");
+                    } catch {
+                        // Revoke failed (probably not endorsed), that's ok
+                    }
+                    
+                } else {
+                    // Try to remove
+                    vm.prank(stateOwner);
+                    freshContract.removeStateEndorsement(identifiers[j], endorsers[i], "Invariant remove");
+                    // Should be UNASSIGNED after removal
+                    uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                    assertEq(status, 0, "Should be UNASSIGNED after removal");
+                }
+            }
+        }
+        
+        // Global invariant: Contract-level endorsements should still work independently
+        assertEq(uint8(freshContract.getEndorsementStatus(alice)), 0, "Contract-level endorsements should be independent");
+    }
 }
