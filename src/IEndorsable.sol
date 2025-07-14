@@ -61,7 +61,7 @@ interface IEndorsable {
      * @notice Returns the endorsement status for the specified address.
      * @dev states: 0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED
      * @param addr The address whose endorsement status is being queried.
-     * @return uint8 representing the address's endorsement state.
+     * @return State representing the address's endorsement state.
      */
-    function getEndorsementStatus(address addr) external view returns (uint8);
+    function getEndorsementStatus(address addr) external view returns (State);
 }

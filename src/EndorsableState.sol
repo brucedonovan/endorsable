@@ -62,6 +62,7 @@ contract EndorsableState is Endorsable {
      * @param comment Optional comment explaining the endorsement
      */
     function endorseState(address stateOwner, string memory identifier, string memory comment) public {
+        require(stateOwner != address(0), "Invalid state owner");
         bytes32 stateId = getStateId(stateOwner, identifier);
         require(stateEndorsements[stateId][msg.sender] == State.REQUESTED, "Not requested");
 
@@ -76,6 +77,7 @@ contract EndorsableState is Endorsable {
      * @param comment Optional comment explaining the revocation
      */
     function revokeStateEndorsement(address stateOwner, string memory identifier, string memory comment) public {
+        require(stateOwner != address(0), "Invalid state owner");
         bytes32 stateId = getStateId(stateOwner, identifier);
         require(stateEndorsements[stateId][msg.sender] == State.ENDORSED, "Not endorsed");
 
@@ -90,6 +92,7 @@ contract EndorsableState is Endorsable {
      * @param comment Optional comment explaining the request
      */
     function requestStateEndorsement(string memory identifier, address addr, string memory comment) public {
+        require(bytes(identifier).length > 0, "Empty identifier");
         bytes32 stateId = getStateId(msg.sender, identifier);
         require(addr != msg.sender, "Cannot request endorsement from self");
         require(stateEndorsements[stateId][addr] == State.UNASSIGNED, "Already has endorsement status");
@@ -100,12 +103,14 @@ contract EndorsableState is Endorsable {
 
     /**
      * @notice Remove endorsement status for a specific state
+     * @dev Only the state owner (msg.sender) can remove endorsements for their own state
      * @param identifier The string identifier for the state
      * @param addr The address to remove endorsement status from
      * @param comment Optional comment explaining the removal
      */
     function removeStateEndorsement(string calldata identifier, address addr, string calldata comment) external {
         bytes32 stateId = getStateId(msg.sender, identifier);
+        require(addr != address(0), "Invalid address");
 
         stateEndorsements[stateId][addr] = State.UNASSIGNED;
         emit StateEndorsementRemoved(stateId, addr, comment);

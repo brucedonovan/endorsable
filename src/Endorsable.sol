@@ -52,10 +52,12 @@ contract Endorsable is Ownable {
     event EndorsementRemoved(address indexed addr, string comment);
 
     /**
-     * @dev construc tor to ensure proper ownership is set - and set pre-requested addresses, if required. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
+     * @dev constructor to ensure proper ownership is set - and set pre-requested addresses, if required. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
      */
     constructor(address[] memory _initialRequests) Ownable(msg.sender) {
+        require(_initialRequests.length <= 100, "Too many initial requests");
         for (uint256 i = 0; i < _initialRequests.length; i++) {
+            require(_initialRequests[i] != address(0), "Invalid address");
             endorsements[_initialRequests[i]] = State.REQUESTED;
         }
     }
@@ -89,6 +91,7 @@ contract Endorsable is Ownable {
      * @param comment Any additional information about the request, included in the emitted event.
      */
     function requestEndorsement(address addr, string calldata comment) external onlyOwner {
+        require(addr != address(0), "Invalid address");
         require(endorsements[addr] != State.ENDORSED, "Already endorsed.");
         require(endorsements[addr] != State.REQUESTED, "Already requested.");
         endorsements[addr] = State.REQUESTED;
@@ -102,6 +105,7 @@ contract Endorsable is Ownable {
      * @param comment Any additional information about the removal, included in the emitted event.
      */
     function removeEndorsement(address addr, string calldata comment) external onlyOwner {
+        require(addr != address(0), "Invalid address");
         require(
             endorsements[addr] == State.ENDORSED || endorsements[addr] == State.REQUESTED, "Not endorsed or requested."
         );
