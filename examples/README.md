@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Foundry](https://img.shields.io/badge/Built%20with-Foundry-000000.svg)](https://getfoundry.sh/)
 
-This directory contains comprehensive, production-ready examples demonstrating the practical usage of both `Endorsable.sol` and `EndorsableState.sol` contracts. These examples serve as both documentation and reference implementations for real-world applications.
+This directory contains illustrative examples of `Endorsable.sol` and `EndorsableState.sol`. They are reference implementations for tests and docs, not production reputation systems.
 
 ## � What's New in v0.1.0
 
@@ -57,9 +57,8 @@ examples/
 **Key Features**:
 - **Individual Project Endorsements**: Each project can be endorsed independently
 - **Project Lifecycle Management**: Create, update, and complete projects with endorsement tracking
-- **Batch Operations**: Efficient batch endorsement requests and status checks
-- **Quality Assessment**: Sophisticated project quality evaluation based on endorsements
-- **Portfolio Metrics**: Track overall portfolio performance and reputation
+- **Quality Assessment**: Example scoring based on a caller-supplied endorser list
+- **Portfolio Metrics**: Track project count and per-project endorsement summaries
 
 **Real-world Applications**:
 - Freelancer/contractor portfolio management
@@ -326,13 +325,12 @@ contract FreelancerPlatform {
 ## 🔐 Security Considerations
 
 ### Access Control Patterns
-- **Owner-Only Functions**: Proper `onlyOwner` modifier usage
+- **Owner-Only Functions**: Project create/update/complete and contract-level request/remove use `onlyOwner`
+- **State owners**: `requestStateEndorsement` / `removeStateEndorsement` are keyed to `msg.sender`, not the contract owner
 - **Endorser Validation**: Only requested addresses can endorse
-- **State Protection**: Comprehensive validation prevents invalid transitions
 
 ### Best Practices Demonstrated
 - **Input Validation**: All parameters validated before processing
-- **Reentrancy Protection**: Functions designed to prevent reentrancy
 - **Integer Overflow**: Using Solidity 0.8+ built-in protection
 - **Event Logging**: Complete audit trail through events
 

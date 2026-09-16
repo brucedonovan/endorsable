@@ -35,7 +35,7 @@ contract EndorsableStateTest is Test {
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse my profile");
 
         // Check that Bob has REQUESTED status (1) for Alice's profile state
-        uint8 status = endorsableContract.getStateEndorsementStatus(alice, "profile", bob);
+        uint8 status = uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob));
         assertEq(status, 1, "Should be REQUESTED");
 
         // Bob endorses Alice's profile state
@@ -43,7 +43,7 @@ contract EndorsableStateTest is Test {
         endorsableContract.endorseState(alice, "profile", "Great profile!");
 
         // Check that Bob now has ENDORSED status (2) for Alice's profile state
-        status = endorsableContract.getStateEndorsementStatus(alice, "profile", bob);
+        status = uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob));
         assertEq(status, 2, "Should be ENDORSED");
 
         // Bob revokes his endorsement
@@ -51,7 +51,7 @@ contract EndorsableStateTest is Test {
         endorsableContract.revokeStateEndorsement(alice, "profile", "Changed my mind");
 
         // Check that Bob now has REVOKED status (3)
-        status = endorsableContract.getStateEndorsementStatus(alice, "profile", bob);
+        status = uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob));
         assertEq(status, 3, "Should be REVOKED");
     }
 
@@ -79,9 +79,13 @@ contract EndorsableStateTest is Test {
         endorsableContract.endorseState(alice, "profile", "Charlie endorses");
 
         // Check both endorsements
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 2, "Bob should have endorsed");
         assertEq(
-            endorsableContract.getStateEndorsementStatus(alice, "profile", charlie), 2, "Charlie should have endorsed"
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 2, "Bob should have endorsed"
+        );
+        assertEq(
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", charlie)),
+            2,
+            "Charlie should have endorsed"
         );
     }
 
@@ -98,9 +102,15 @@ contract EndorsableStateTest is Test {
         endorsableContract.endorseState(alice, "profile", "Endorsing Alice");
 
         // Check that only Alice's profile is endorsed by Charlie
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", charlie), 2, "Alice should be endorsed");
         assertEq(
-            endorsableContract.getStateEndorsementStatus(bob, "profile", charlie), 1, "Bob should still be requested"
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", charlie)),
+            2,
+            "Alice should be endorsed"
+        );
+        assertEq(
+            uint8(endorsableContract.getStateEndorsementStatus(bob, "profile", charlie)),
+            1,
+            "Bob should still be requested"
         );
     }
 
@@ -132,14 +142,14 @@ contract EndorsableStateTest is Test {
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse");
 
         // Verify Bob has REQUESTED status
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 1, "Should be REQUESTED");
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 1, "Should be REQUESTED");
 
         // Alice removes Bob's endorsement status
         vm.prank(alice);
         endorsableContract.removeStateEndorsement("profile", bob, "Removing endorsement");
 
-        // Verify Bob now has UNASSIGNED status
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 0, "Should be UNASSIGNED");
+        // Verify Bob now has REMOVED status
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 4, "Should be REMOVED");
     }
 
     function testRemoveStateEndorsementFromEndorsed() public {
@@ -152,18 +162,18 @@ contract EndorsableStateTest is Test {
         endorsableContract.endorseState(alice, "profile", "Great profile!");
 
         // Verify Bob has ENDORSED status
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 2, "Should be ENDORSED");
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 2, "Should be ENDORSED");
 
         // Alice removes Bob's endorsement status
         vm.prank(alice);
         endorsableContract.removeStateEndorsement("profile", bob, "Removing endorsement");
 
-        // Verify Bob now has UNASSIGNED status
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 0, "Should be UNASSIGNED");
+        // Verify Bob now has REMOVED status
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 4, "Should be REMOVED");
     }
 
     function testRemoveStateEndorsementFromRevoked() public {
-        // Complete flow: request -> endorse -> revoke -> remove
+        // Complete flow: request -> endorse -> revoke
         vm.prank(alice);
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse");
 
@@ -174,23 +184,18 @@ contract EndorsableStateTest is Test {
         endorsableContract.revokeStateEndorsement(alice, "profile", "Changed my mind");
 
         // Verify Bob has REVOKED status
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 3, "Should be REVOKED");
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 3, "Should be REVOKED");
 
-        // Alice removes Bob's endorsement status
+        // Removal is only allowed from ENDORSED or REQUESTED, matching contract-level behaviour
         vm.prank(alice);
+        vm.expectRevert("Not endorsed or requested.");
         endorsableContract.removeStateEndorsement("profile", bob, "Removing revoked endorsement");
-
-        // Verify Bob now has UNASSIGNED status
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 0, "Should be UNASSIGNED");
     }
 
     function testRemoveStateEndorsementFromUnassigned() public {
-        // Try to remove endorsement status that doesn't exist
         vm.prank(alice);
+        vm.expectRevert("Not endorsed or requested.");
         endorsableContract.removeStateEndorsement("profile", bob, "Removing non-existent");
-
-        // Should still be UNASSIGNED (no error, just no-op)
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 0, "Should remain UNASSIGNED");
     }
 
     // ================================
@@ -263,7 +268,7 @@ contract EndorsableStateTest is Test {
 
         // Alice tries to request again from Bob
         vm.prank(alice);
-        vm.expectRevert("Already has endorsement status");
+        vm.expectRevert("Already requested.");
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse again");
     }
 
@@ -277,12 +282,12 @@ contract EndorsableStateTest is Test {
 
         // Alice tries to request again from Bob
         vm.prank(alice);
-        vm.expectRevert("Already has endorsement status");
+        vm.expectRevert("Already endorsed.");
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse again");
     }
 
-    function testCannotRequestWhenAlreadyRevoked() public {
-        // Complete flow to revoked state
+    function testRequestAfterRevoke() public {
+        // Complete flow to revoked state, then re-request (parity with contract-level)
         vm.prank(alice);
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse");
 
@@ -292,10 +297,10 @@ contract EndorsableStateTest is Test {
         vm.prank(bob);
         endorsableContract.revokeStateEndorsement(alice, "profile", "Changed my mind");
 
-        // Alice tries to request again from Bob
         vm.prank(alice);
-        vm.expectRevert("Already has endorsement status");
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse again");
+
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 1, "Should be REQUESTED");
     }
 
     function testRequestAfterRemoval() public {
@@ -306,11 +311,13 @@ contract EndorsableStateTest is Test {
         vm.prank(alice);
         endorsableContract.removeStateEndorsement("profile", bob, "Removing");
 
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 4, "Should be REMOVED");
+
         // Now Alice should be able to request again
         vm.prank(alice);
         endorsableContract.requestStateEndorsement("profile", bob, "Please endorse again");
 
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 1, "Should be REQUESTED");
+        assertEq(uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 1, "Should be REQUESTED");
     }
 
     // ================================
@@ -333,10 +340,16 @@ contract EndorsableStateTest is Test {
         endorsableContract.endorseState(alice, "profile", "Great profile!");
 
         // Check states are independent
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 2, "Profile should be ENDORSED");
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "skills", bob), 1, "Skills should be REQUESTED");
         assertEq(
-            endorsableContract.getStateEndorsementStatus(alice, "education", bob), 1, "Education should be REQUESTED"
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)), 2, "Profile should be ENDORSED"
+        );
+        assertEq(
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "skills", bob)), 1, "Skills should be REQUESTED"
+        );
+        assertEq(
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "education", bob)),
+            1,
+            "Education should be REQUESTED"
         );
     }
 
@@ -357,11 +370,21 @@ contract EndorsableStateTest is Test {
     }
 
     function testEmptyStringIdentifier() public {
-        // Test with empty string identifier
         vm.prank(alice);
+        vm.expectRevert("Empty identifier");
         endorsableContract.requestStateEndorsement("", bob, "Empty identifier");
+    }
 
-        assertEq(endorsableContract.getStateEndorsementStatus(alice, "", bob), 1, "Should work with empty string");
+    function testRequestStateEndorsementRevertsForZeroAddress() public {
+        vm.prank(alice);
+        vm.expectRevert("Invalid address");
+        endorsableContract.requestStateEndorsement("profile", address(0), "Zero address");
+    }
+
+    function testRemoveStateEndorsementRevertsForEmptyIdentifier() public {
+        vm.prank(alice);
+        vm.expectRevert("Empty identifier");
+        endorsableContract.removeStateEndorsement("", bob, "Empty identifier");
     }
 
     // ================================
@@ -383,7 +406,9 @@ contract EndorsableStateTest is Test {
         // Check both statuses are independent
         assertEq(uint8(endorsableContract.getEndorsementStatus(bob)), 1, "Contract-level should still be REQUESTED");
         assertEq(
-            endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 1, "State-level should be REQUESTED"
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)),
+            1,
+            "State-level should be REQUESTED"
         );
 
         // Bob endorses state-level
@@ -393,7 +418,9 @@ contract EndorsableStateTest is Test {
         // Contract-level should be unaffected
         assertEq(uint8(endorsableContract.getEndorsementStatus(bob)), 1, "Contract-level should still be REQUESTED");
         assertEq(
-            endorsableContract.getStateEndorsementStatus(alice, "profile", bob), 2, "State-level should be ENDORSED"
+            uint8(endorsableContract.getStateEndorsementStatus(alice, "profile", bob)),
+            2,
+            "State-level should be ENDORSED"
         );
     }
 
@@ -424,6 +451,7 @@ contract EndorsableStateTest is Test {
         vm.assume(stateOwner != endorser); // Cannot request from self
         vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
         vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        vm.assume(bytes(identifier).length > 0);
 
         // Deploy fresh contract to avoid interference
         address[] memory emptyRequests = new address[](0);
@@ -435,19 +463,21 @@ contract EndorsableStateTest is Test {
         freshContract.requestStateEndorsement(identifier, endorser, comment);
 
         // Check state and invariants
-        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        uint8 status = uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser));
         assertEq(status, 1, "Should be REQUESTED");
 
         // Invariant: Cannot request again for same state/endorser combo
         vm.prank(stateOwner);
-        vm.expectRevert("Already has endorsement status");
+        vm.expectRevert("Already requested.");
         freshContract.requestStateEndorsement(identifier, endorser, "Should fail");
 
         // Invariant: Different identifiers should be independent
         vm.prank(stateOwner);
         freshContract.requestStateEndorsement(string.concat(identifier, "_different"), endorser, comment);
         assertEq(
-            freshContract.getStateEndorsementStatus(stateOwner, string.concat(identifier, "_different"), endorser),
+            uint8(
+                freshContract.getStateEndorsementStatus(stateOwner, string.concat(identifier, "_different"), endorser)
+            ),
             1,
             "Different identifier should work"
         );
@@ -467,6 +497,7 @@ contract EndorsableStateTest is Test {
         vm.assume(stateOwner != endorser);
         vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
         vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        vm.assume(bytes(identifier).length > 0);
 
         address[] memory emptyRequests = new address[](0);
         vm.prank(stateOwner);
@@ -480,7 +511,7 @@ contract EndorsableStateTest is Test {
         freshContract.endorseState(stateOwner, identifier, endorseComment);
 
         // Check state and invariants
-        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        uint8 status = uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser));
         assertEq(status, 2, "Should be ENDORSED");
 
         // Invariant: Cannot endorse again
@@ -490,7 +521,7 @@ contract EndorsableStateTest is Test {
 
         // Invariant: Cannot request again while endorsed
         vm.prank(stateOwner);
-        vm.expectRevert("Already has endorsement status");
+        vm.expectRevert("Already endorsed.");
         freshContract.requestStateEndorsement(identifier, endorser, "Should fail");
     }
 
@@ -507,6 +538,7 @@ contract EndorsableStateTest is Test {
         vm.assume(stateOwner != endorser);
         vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
         vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        vm.assume(bytes(identifier).length > 0);
 
         address[] memory emptyRequests = new address[](0);
         vm.prank(stateOwner);
@@ -523,7 +555,7 @@ contract EndorsableStateTest is Test {
         freshContract.revokeStateEndorsement(stateOwner, identifier, revokeComment);
 
         // Check state and invariants
-        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
+        uint8 status = uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser));
         assertEq(status, 3, "Should be REVOKED");
 
         // Invariant: Cannot revoke again
@@ -536,12 +568,13 @@ contract EndorsableStateTest is Test {
         vm.expectRevert("Not requested");
         freshContract.endorseState(stateOwner, identifier, "Should fail");
 
-        // Invariant: State owner can request again after revoke (use different identifier to avoid collisions)
-        string memory newIdentifier = string.concat(identifier, "_after_revoke");
+        // Invariant: State owner can request again after revoke for the same identifier
         vm.prank(stateOwner);
-        freshContract.requestStateEndorsement(newIdentifier, endorser, "Should succeed after revoke");
+        freshContract.requestStateEndorsement(identifier, endorser, "Should succeed after revoke");
         assertEq(
-            freshContract.getStateEndorsementStatus(stateOwner, newIdentifier, endorser), 1, "Should be REQUESTED again"
+            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser)),
+            1,
+            "Should be REQUESTED again"
         );
     }
 
@@ -560,6 +593,7 @@ contract EndorsableStateTest is Test {
         vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
         vm.assume(endorser != alice && endorser != bob && endorser != charlie);
         vm.assume(nonOwner != alice && nonOwner != bob && nonOwner != charlie);
+        vm.assume(bytes(identifier).length > 0);
 
         address[] memory emptyRequests = new address[](0);
         vm.prank(stateOwner);
@@ -576,15 +610,17 @@ contract EndorsableStateTest is Test {
         vm.prank(stateOwner);
         freshContract.removeStateEndorsement(identifier, endorser, removeComment);
 
-        // Check final state - should be UNASSIGNED
-        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser);
-        assertEq(status, 0, "Should be UNASSIGNED after removal");
+        // Check final state - should be REMOVED
+        uint8 status = uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser));
+        assertEq(status, 4, "Should be REMOVED after removal");
 
         // Invariant: Can request again after removal
         vm.prank(stateOwner);
         freshContract.requestStateEndorsement(identifier, endorser, "Should succeed after removal");
         assertEq(
-            freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser), 1, "Should be REQUESTED again"
+            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser)),
+            1,
+            "Should be REQUESTED again"
         );
     }
 
@@ -613,7 +649,9 @@ contract EndorsableStateTest is Test {
             vm.prank(stateOwner);
             freshContract.requestStateEndorsement(identifiers[i], endorser, "Multi-state request");
             assertEq(
-                freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser), 1, "Should be REQUESTED"
+                uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser)),
+                1,
+                "Should be REQUESTED"
             );
         }
 
@@ -626,7 +664,7 @@ contract EndorsableStateTest is Test {
                 vm.prank(endorser);
                 freshContract.endorseState(stateOwner, identifiers[i], "Multi-state endorse");
                 assertEq(
-                    freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser),
+                    uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser)),
                     2,
                     "Should be ENDORSED"
                 );
@@ -635,9 +673,9 @@ contract EndorsableStateTest is Test {
                 vm.prank(stateOwner);
                 freshContract.removeStateEndorsement(identifiers[i], endorser, "Multi-state remove");
                 assertEq(
-                    freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser),
-                    0,
-                    "Should be UNASSIGNED"
+                    uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser)),
+                    4,
+                    "Should be REMOVED"
                 );
             } else if (op == 2) {
                 // Endorse then revoke
@@ -646,7 +684,7 @@ contract EndorsableStateTest is Test {
                 vm.prank(endorser);
                 freshContract.revokeStateEndorsement(stateOwner, identifiers[i], "Multi-state revoke");
                 assertEq(
-                    freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser),
+                    uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser)),
                     3,
                     "Should be REVOKED"
                 );
@@ -656,8 +694,8 @@ contract EndorsableStateTest is Test {
 
         // Verify states are independent
         for (uint256 i = 0; i < numStates; i++) {
-            uint8 state = freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser);
-            assertTrue(state <= 3, "State should be valid");
+            uint8 state = uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[i], endorser));
+            assertTrue(state <= 4, "State should be valid");
         }
     }
 
@@ -682,6 +720,7 @@ contract EndorsableStateTest is Test {
         vm.assume(endorser1 != alice && endorser1 != bob && endorser1 != charlie);
         vm.assume(endorser2 != alice && endorser2 != bob && endorser2 != charlie);
         vm.assume(endorser3 != alice && endorser3 != bob && endorser3 != charlie);
+        vm.assume(bytes(identifier).length > 0);
 
         address[3] memory endorsers = [endorser1, endorser2, endorser3];
 
@@ -694,7 +733,9 @@ contract EndorsableStateTest is Test {
             vm.prank(stateOwner);
             freshContract.requestStateEndorsement(identifier, endorsers[i], "Multi-endorser request");
             assertEq(
-                freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]), 1, "Should be REQUESTED"
+                uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i])),
+                1,
+                "Should be REQUESTED"
             );
         }
 
@@ -707,7 +748,7 @@ contract EndorsableStateTest is Test {
                 vm.prank(endorsers[i]);
                 freshContract.endorseState(stateOwner, identifier, "Multi-endorser endorse");
                 assertEq(
-                    freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]),
+                    uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i])),
                     2,
                     "Should be ENDORSED"
                 );
@@ -716,9 +757,9 @@ contract EndorsableStateTest is Test {
                 vm.prank(stateOwner);
                 freshContract.removeStateEndorsement(identifier, endorsers[i], "Multi-endorser remove");
                 assertEq(
-                    freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]),
-                    0,
-                    "Should be UNASSIGNED"
+                    uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i])),
+                    4,
+                    "Should be REMOVED"
                 );
             } else if (op == 2) {
                 // Endorse then revoke
@@ -727,7 +768,7 @@ contract EndorsableStateTest is Test {
                 vm.prank(endorsers[i]);
                 freshContract.revokeStateEndorsement(stateOwner, identifier, "Multi-endorser revoke");
                 assertEq(
-                    freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]),
+                    uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i])),
                     3,
                     "Should be REVOKED"
                 );
@@ -737,8 +778,8 @@ contract EndorsableStateTest is Test {
 
         // Verify endorsers are independent
         for (uint256 i = 0; i < 3; i++) {
-            uint8 state = freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]);
-            assertTrue(state <= 3, "State should be valid");
+            uint8 state = uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorsers[i]));
+            assertTrue(state <= 4, "State should be valid");
         }
     }
 
@@ -782,6 +823,7 @@ contract EndorsableStateTest is Test {
         vm.assume(stateOwner != endorser);
         vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
         vm.assume(endorser != alice && endorser != bob && endorser != charlie);
+        vm.assume(bytes(identifier).length > 0);
 
         address[] memory emptyRequests = new address[](0);
         vm.prank(stateOwner);
@@ -805,13 +847,17 @@ contract EndorsableStateTest is Test {
         vm.prank(stateOwner);
         freshContract.removeStateEndorsement(removeIdentifier, endorser, comment);
 
-        // Final state should be UNASSIGNED regardless of comment content
+        // Final state should be REMOVED regardless of comment content
         assertEq(
-            freshContract.getStateEndorsementStatus(stateOwner, removeIdentifier, endorser), 0, "Should be UNASSIGNED"
+            uint8(freshContract.getStateEndorsementStatus(stateOwner, removeIdentifier, endorser)),
+            4,
+            "Should be REMOVED"
         );
 
         // Original state should be REVOKED
-        assertEq(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser), 3, "Should be REVOKED");
+        assertEq(
+            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifier, endorser)), 3, "Should be REVOKED"
+        );
     }
 
     /**
@@ -830,6 +876,7 @@ contract EndorsableStateTest is Test {
         vm.assume(stateOwner != alice && stateOwner != bob && stateOwner != charlie);
         vm.assume(endorser1 != alice && endorser1 != bob && endorser1 != charlie);
         vm.assume(endorser2 != alice && endorser2 != bob && endorser2 != charlie);
+        vm.assume(bytes(id1).length > 0 && bytes(id2).length > 0);
 
         address[] memory emptyRequests = new address[](0);
         vm.prank(stateOwner);
@@ -848,7 +895,8 @@ contract EndorsableStateTest is Test {
                     vm.prank(stateOwner);
                     try freshContract.requestStateEndorsement(identifiers[j], endorsers[i], "Invariant test") {
                         // Should be REQUESTED if successful
-                        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                        uint8 status =
+                            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]));
                         assertEq(status, 1, "Should be REQUESTED after successful request");
                     } catch {
                         // Request failed (probably already has status), that's ok
@@ -858,7 +906,8 @@ contract EndorsableStateTest is Test {
                     vm.prank(endorsers[i]);
                     try freshContract.endorseState(stateOwner, identifiers[j], "Invariant endorse") {
                         // Should be ENDORSED if successful
-                        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                        uint8 status =
+                            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]));
                         assertEq(status, 2, "Should be ENDORSED after successful endorse");
                     } catch {
                         // Endorse failed (probably not requested), that's ok
@@ -868,7 +917,8 @@ contract EndorsableStateTest is Test {
                     vm.prank(endorsers[i]);
                     try freshContract.revokeStateEndorsement(stateOwner, identifiers[j], "Invariant revoke") {
                         // Should be REVOKED if successful
-                        uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
+                        uint8 status =
+                            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]));
                         assertEq(status, 3, "Should be REVOKED after successful revoke");
                     } catch {
                         // Revoke failed (probably not endorsed), that's ok
@@ -876,10 +926,14 @@ contract EndorsableStateTest is Test {
                 } else {
                     // Try to remove
                     vm.prank(stateOwner);
-                    freshContract.removeStateEndorsement(identifiers[j], endorsers[i], "Invariant remove");
-                    // Should be UNASSIGNED after removal
-                    uint8 status = freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]);
-                    assertEq(status, 0, "Should be UNASSIGNED after removal");
+                    try freshContract.removeStateEndorsement(identifiers[j], endorsers[i], "Invariant remove") {
+                        // Should be REMOVED if successful
+                        uint8 status =
+                            uint8(freshContract.getStateEndorsementStatus(stateOwner, identifiers[j], endorsers[i]));
+                        assertEq(status, 4, "Should be REMOVED after removal");
+                    } catch {
+                        // Remove failed (probably not endorsed or requested), that's ok
+                    }
                 }
             }
         }

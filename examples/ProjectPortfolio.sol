@@ -119,9 +119,9 @@ contract ProjectPortfolio is EndorsableState {
         require(bytes(projects[projectId].name).length > 0, "Project does not exist");
         
         for (uint256 i = 0; i < endorsers.length; i++) {
-            // Only request if not already requested or endorsed
-            uint8 status = getStateEndorsementStatus(msg.sender, projectId, endorsers[i]);
-            if (status == 0) { // UNASSIGNED
+            // Re-request is allowed from UNASSIGNED, REVOKED, or REMOVED
+            State status = getStateEndorsementStatus(msg.sender, projectId, endorsers[i]);
+            if (status != State.ENDORSED && status != State.REQUESTED) {
                 requestStateEndorsement(projectId, endorsers[i], comment);
             }
         }
@@ -146,7 +146,7 @@ contract ProjectPortfolio is EndorsableState {
         // Count endorsements manually since getStateEndorsementCount was removed
         uint256 endorsementCount = 0;
         for (uint256 i = 0; i < potentialEndorsers.length; i++) {
-            if (getStateEndorsementStatus(owner, projectId, potentialEndorsers[i]) == 2) { // ENDORSED
+            if (getStateEndorsementStatus(owner, projectId, potentialEndorsers[i]) == State.ENDORSED) {
                 endorsementCount++;
             }
         }
@@ -185,7 +185,7 @@ contract ProjectPortfolio is EndorsableState {
         // Count endorsements manually since getStateEndorsementCount was removed
         uint256 endorsementCount = 0;
         for (uint256 i = 0; i < potentialEndorsers.length; i++) {
-            if (getStateEndorsementStatus(owner, projectId, potentialEndorsers[i]) == 2) { // ENDORSED
+            if (getStateEndorsementStatus(owner, projectId, potentialEndorsers[i]) == State.ENDORSED) {
                 endorsementCount++;
             }
         }
@@ -231,12 +231,11 @@ contract ProjectPortfolio is EndorsableState {
     ) {
         require(bytes(projects[projectId].name).length > 0, "Project does not exist");
         
-        // Check statuses manually since batchGetStateEndorsementStatus was removed
         for (uint256 i = 0; i < addresses.length; i++) {
-            uint8 status = getStateEndorsementStatus(owner, projectId, addresses[i]);
-            if (status == 2) endorsedCount++; // ENDORSED
-            else if (status == 1) requestedCount++; // REQUESTED
-            else if (status == 3) revokedCount++; // REVOKED
+            State status = getStateEndorsementStatus(owner, projectId, addresses[i]);
+            if (status == State.ENDORSED) endorsedCount++;
+            else if (status == State.REQUESTED) requestedCount++;
+            else if (status == State.REVOKED) revokedCount++;
         }
     }
 }

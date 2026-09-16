@@ -22,6 +22,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 pragma solidity ^0.8.13;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IEndorsable.sol";
 
 /**
  * @title Endorsable
@@ -29,27 +30,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @notice An inheritable contract that allows the parent contract to be endorsed by another addresses (contracts or EOAs).
  * @dev This contract is intended to be inherited by other contracts that require endorsement functionality.
  */
-contract Endorsable is Ownable {
+contract Endorsable is Ownable, IEndorsable {
     /**
      * @notice Stores the endorsement status for each address.
      */
     mapping(address => State) private endorsements;
-
-    /**
-     * @notice Enum representing the possible endorsement states for an address in this contract: (0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED).
-     */
-    enum State {
-        UNASSIGNED,
-        REQUESTED,
-        ENDORSED,
-        REVOKED,
-        REMOVED
-    }
-
-    event Endorsed(address indexed endorser, string comment);
-    event EndorsementRevoked(address indexed endorser, string comment);
-    event EndorsementRequested(address indexed addr, string comment);
-    event EndorsementRemoved(address indexed addr, string comment);
 
     /**
      * @dev constructor to ensure proper ownership is set - and set pre-requested addresses, if required. This contract is generally intended to be used via inheritance. Considering using `Ownable2step.sol` extension for a more secure ownership model.
@@ -117,7 +102,7 @@ contract Endorsable is Ownable {
      * @notice Returns the endorsement status for the specified address.
      * @dev states: 0 = UNASSIGNED, 1 = REQUESTED, 2 = ENDORSED, 3 = REVOKED, 4 = REMOVED
      * @param addr The address whose endorsement status is being queried.
-     * @return uint8 representing the address's endorsement state.
+     * @return State representing the address's endorsement state.
      */
     function getEndorsementStatus(address addr) public view returns (State) {
         return endorsements[addr];
