@@ -364,6 +364,7 @@ contract EndorsableTest is Test {
         // Skip addresses that are pre-initialized in the constructor
         vm.assume(randomAddr != initRequest && randomAddr != initRequest2);
         vm.assume(randomAddr != address(0));
+        vm.assume(randomAddr != owner);
 
         // 1) Request
         vm.prank(owner);
