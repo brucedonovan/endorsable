@@ -16,15 +16,15 @@ interface IEndorsableState is IEndorsable {
     event StateEndorsementRemoved(bytes32 indexed stateId, address indexed addr, string comment);
 
     // State-specific endorsement functions
-    function endorseState(address stateOwner, string memory identifier, string memory comment) external;
-    function revokeStateEndorsement(address stateOwner, string memory identifier, string memory comment) external;
-    function requestStateEndorsement(string memory identifier, address addr, string memory comment) external;
+    function endorseState(address stateOwner, string calldata identifier, string calldata comment) external;
+    function revokeStateEndorsement(address stateOwner, string calldata identifier, string calldata comment) external;
+    function requestStateEndorsement(string calldata identifier, address addr, string calldata comment) external;
     function removeStateEndorsement(string calldata identifier, address addr, string calldata comment) external;
 
     // View functions
     function getStateEndorsementStatus(address owner, string calldata identifier, address addr)
         external
         view
-        returns (uint8);
-    function getStateId(address owner, string memory identifier) external pure returns (bytes32);
+        returns (State);
+    function getStateId(address owner, string calldata identifier) external pure returns (bytes32);
 }

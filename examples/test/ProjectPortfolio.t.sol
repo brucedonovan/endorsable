@@ -95,9 +95,9 @@ contract ProjectPortfolioTest is Test {
         );
         
         // Check that endorsements were requested
-        assertEq(portfolio.getStateEndorsementStatus(owner, "mobile-app", client1), 1); // REQUESTED
-        assertEq(portfolio.getStateEndorsementStatus(owner, "mobile-app", reviewer1), 1); // REQUESTED
-        assertEq(portfolio.getStateEndorsementStatus(owner, "mobile-app", expert1), 1); // REQUESTED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "mobile-app", client1)), 1); // REQUESTED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "mobile-app", reviewer1)), 1); // REQUESTED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "mobile-app", expert1)), 1); // REQUESTED
         
         // Endorsers endorse the project
         vm.prank(client1);
@@ -110,9 +110,9 @@ contract ProjectPortfolioTest is Test {
         portfolio.endorseState(owner, "mobile-app", "Meets industry security standards");
         
         // Check endorsement statuses
-        assertEq(portfolio.getStateEndorsementStatus(owner, "mobile-app", client1), 2); // ENDORSED
-        assertEq(portfolio.getStateEndorsementStatus(owner, "mobile-app", reviewer1), 2); // ENDORSED
-        assertEq(portfolio.getStateEndorsementStatus(owner, "mobile-app", expert1), 2); // ENDORSED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "mobile-app", client1)), 2); // ENDORSED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "mobile-app", reviewer1)), 2); // ENDORSED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "mobile-app", expert1)), 2); // ENDORSED
     }
     
     function testBatchEndorsementChecks() public {
@@ -136,9 +136,9 @@ contract ProjectPortfolioTest is Test {
         portfolio.endorseState(owner, "batch-test", "Solid work");
         
         // Check individual statuses since we removed batch function
-        assertEq(portfolio.getStateEndorsementStatus(owner, "batch-test", client1), 2); // ENDORSED
-        assertEq(portfolio.getStateEndorsementStatus(owner, "batch-test", reviewer1), 1); // REQUESTED  
-        assertEq(portfolio.getStateEndorsementStatus(owner, "batch-test", expert1), 2); // ENDORSED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "batch-test", client1)), 2); // ENDORSED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "batch-test", reviewer1)), 1); // REQUESTED  
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "batch-test", expert1)), 2); // ENDORSED
         
         // Check endorsement summary
         (uint256 endorsed, uint256 requested, uint256 revoked) = 
@@ -237,13 +237,13 @@ contract ProjectPortfolioTest is Test {
         vm.prank(client1);
         portfolio.endorseState(owner, "revoke-test", "Initial endorsement");
         
-        assertEq(portfolio.getStateEndorsementStatus(owner, "revoke-test", client1), 2); // ENDORSED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "revoke-test", client1)), 2); // ENDORSED
         
         // Revoke endorsement
         vm.prank(client1);
         portfolio.revokeStateEndorsement(owner, "revoke-test", "Changed my mind");
         
-        assertEq(portfolio.getStateEndorsementStatus(owner, "revoke-test", client1), 3); // REVOKED
+        assertEq(uint8(portfolio.getStateEndorsementStatus(owner, "revoke-test", client1)), 3); // REVOKED
     }
     
     function testUpdateProject() public {
